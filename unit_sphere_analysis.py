@@ -52,7 +52,9 @@ ptsSpher = appendSphericalCoords(pts)
 
 # 3. Lebedev quadrature for KL?
     # https://people.sc.fsu.edu/~jburkardt/cpp_src/sphere_lebedev_rule/sphere_lebedev_rule.html 
-
+    # https://en.wikipedia.org/wiki/Lebedev_quadrature 
+    # python version?:
+        # https://github.com/Rufflewind/lebedev_laikov/blob/master/lebedev_laikov.py
 
 
 
