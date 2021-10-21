@@ -5,6 +5,8 @@ import numpy as np
 import re
 import glob
 import scipy.optimize
+import spherical_kde
+import cartopy
 from spherical_kde.utils import (cartesian_from_polar,
                                  polar_from_cartesian, logsinh,
                                  rotation_matrix)
@@ -176,11 +178,8 @@ for file in all_files:
 
 
 # %%
-import spherical_kde
-
 sKDE = spherical_kde.SphericalKDE(dfSpher['phi'], dfSpher['theta'], weights=None, bandwidth=None, density=100)
 
-import cartopy
 fig=plt.figure()
 ax = fig.add_subplot(111, projection=cartopy.crs.Mollweide()) # Orthographic gives blank plot
 sKDE.plot(ax)
