@@ -162,7 +162,7 @@ for file in all_files:
     dfAccel['x'] = pd.to_numeric(dfAccel['x'])
     dfAccel['y'] = pd.to_numeric(dfAccel['y'])
     dfAccel['z'] = pd.to_numeric(dfAccel['z'])
-    dfSpher = addSpherCoords(dfAccel[:100])
+    dfSpher = addSpherCoords(dfAccel[100:200])
 
 
     # vMF = VonMisesFisher_distribution(dfSpher['phi'], dfSpher['theta'], 0, 0, len(dfSpher))
@@ -175,8 +175,6 @@ for file in all_files:
     # plt.show()
 
 
-print('finish')
-
 # %%
 import spherical_kde
 
@@ -184,7 +182,7 @@ sKDE = spherical_kde.SphericalKDE(dfSpher['phi'], dfSpher['theta'], weights=None
 
 import cartopy
 fig=plt.figure()
-ax = fig.add_subplot(111, projection=cartopy.crs.Mollweide())
+ax = fig.add_subplot(111, projection=cartopy.crs.Mollweide()) # Orthographic gives blank plot
 sKDE.plot(ax)
 
 # when trying to use full dataframe:
