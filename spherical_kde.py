@@ -8,8 +8,8 @@ import scipy.optimize
 from spherical_kde.utils import (cartesian_from_polar,
                                  polar_from_cartesian, logsinh,
                                  rotation_matrix)
-
-
+from matplotlib import pyplot as plt
+                                 
 #%%
 numbers = re.compile(r'(\d+)')
 def numericalSort(value):
@@ -162,18 +162,38 @@ for file in all_files:
     dfAccel['x'] = pd.to_numeric(dfAccel['x'])
     dfAccel['y'] = pd.to_numeric(dfAccel['y'])
     dfAccel['z'] = pd.to_numeric(dfAccel['z'])
-    dfSpher = addSpherCoords(dfAccel)
+    dfSpher = addSpherCoords(dfAccel[:100])
 
 
-    vMF = VonMisesFisher_distribution(dfSpher['phi'], dfSpher['theta'], 0, 0, len(dfSpher))
+    # vMF = VonMisesFisher_distribution(dfSpher['phi'], dfSpher['theta'], 0, 0, len(dfSpher))
 
-
-
-
-
-
+    # # plot histogram of vMF
+    # # Creating histogram
+    # fig, ax = plt.subplots(figsize =(10, 7))
+    # ax.hist(vMF)
+    # # Show plot
+    # plt.show()
 
 
 print('finish')
 
 # %%
+import spherical_kde
+
+sKDE = spherical_kde.SphericalKDE(dfSpher['phi'], dfSpher['theta'], weights=None, bandwidth=None, density=100)
+
+import cartopy
+fig=plt.figure()
+ax = fig.add_subplot(111, projection=cartopy.crs.Mollweide())
+sKDE.plot(ax)
+
+# when trying to use full dataframe:
+# MemoryError: Unable to allocate 36.8 GiB for an array with shape (10000, 493877) and data type float64
+
+# %%
+# find KL divergence for diff users
+
+
+
+
+
