@@ -11,7 +11,7 @@ from spherical_kde.utils import (cartesian_from_polar,
                                  polar_from_cartesian, logsinh,
                                  rotation_matrix)
 from matplotlib import pyplot as plt
-                                 
+
 #%%
 numbers = re.compile(r'(\d+)')
 def numericalSort(value):
