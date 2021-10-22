@@ -11,7 +11,7 @@ from spherical_kde.utils import (cartesian_from_polar,
                                  polar_from_cartesian, logsinh,
                                  rotation_matrix)
 from matplotlib import pyplot as plt
-
+                                 
 #%%
 numbers = re.compile(r'(\d+)')
 def numericalSort(value):
@@ -27,6 +27,9 @@ def addSpherCoords(xyz):
     xyz['theta'] = np.arccos(z / (np.sqrt(x**2 + y**2 + z**2)))
     xyz['phi'] = np.arctan2(y, x) # arctan2 requires (y,x)
     return(xyz)
+# double check calculations
+
+
 
 
 def VonMisesFisher_distribution(phi, theta, phi0, theta0, sigma0):
@@ -181,8 +184,12 @@ for file in all_files:
 sKDE = spherical_kde.SphericalKDE(dfSpher['phi'], dfSpher['theta'], weights=None, bandwidth=None, density=100)
 
 fig=plt.figure()
-ax = fig.add_subplot(111, projection=cartopy.crs.Mollweide()) # Orthographic gives blank plot
+ax = fig.add_subplot(111, projection=cartopy.crs.Robinson()) # Orthographic gives blank plot
 sKDE.plot(ax)
+
+
+
+# could plot samples
 
 # when trying to use full dataframe:
 # MemoryError: Unable to allocate 36.8 GiB for an array with shape (10000, 493877) and data type float64
@@ -190,6 +197,12 @@ sKDE.plot(ax)
 # %%
 # find KL divergence for diff users
 
+
+# start w/ pair-wise comparison
+# R2 w/phi & theta
+# visually compare kde after find small diff w/ kl
+
+# download matlab (octave)
 
 
 
