@@ -7,9 +7,7 @@ import glob
 import scipy.optimize
 import spherical_kde
 import cartopy
-from spherical_kde.utils import (cartesian_from_polar,
-                                 polar_from_cartesian, logsinh,
-                                 rotation_matrix)
+import spherical_kde.utils
 from matplotlib import pyplot as plt
                                  
 #%%
@@ -204,6 +202,55 @@ sKDE.plot(ax)
 
 # download matlab (octave)
 
+#%%
+
+#########################################################################################################
+# 2021-10-22
+
+# dfSpher includes the spherical coordinates of the accel data
+
+
+f1 = '/home/mindy/Desktop/BiAffect-iOS/UnMASCK/BiAffect_data/processed_output/accelerometer/test/User_3_accelData.parquet'
+f2 = '/home/mindy/Desktop/BiAffect-iOS/UnMASCK/BiAffect_data/processed_output/accelerometer/test/User_4_accelData.parquet'
+f3 = '/home/mindy/Desktop/BiAffect-iOS/UnMASCK/BiAffect_data/processed_output/accelerometer/User_7_accelData.parquet'
+f4 = '/home/mindy/Desktop/BiAffect-iOS/UnMASCK/BiAffect_data/processed_output/accelerometer/User_28_accelData.parquet'
 
 
 
+df1 = pd.read_parquet(f1, engine='pyarrow')
+df2 = pd.read_parquet(f2, engine='pyarrow')
+df3 = pd.read_parquet(f3, engine='pyarrow')
+df4 = pd.read_parquet(f4, engine='pyarrow')
+dfSpher1 = addSpherCoords(df1)
+dfSpher2 = addSpherCoords(df2)
+dfSpher3 = addSpherCoords(df3)
+dfSpher4 = addSpherCoords(df4)
+
+
+#%%
+
+# MIGHT BE TOO LARGE TO RUN AS RAW DATA. FIND MEDIAN PER SESSION?
+
+
+vMFdist1 = spherical_kde.SphericalKDE(dfSpher1['phi'][0:100], dfSpher1['theta'][0:100], weights=None, bandwidth=None, density=100)
+vMFdist2 = spherical_kde.SphericalKDE(dfSpher2['phi'][0:100], dfSpher2['theta'][0:100], weights=None, bandwidth=None, density=100)
+vMFdist3 = spherical_kde.SphericalKDE(dfSpher3['phi'][0:100], dfSpher3['theta'][0:100], weights=None, bandwidth=None, density=100)
+vMFdist4 = spherical_kde.SphericalKDE(dfSpher4['phi'][0:100], dfSpher4['theta'][0:100], weights=None, bandwidth=None, density=100)
+
+#spherical_kde.distributions.VonMisesFisher_distribution(dfSpher2['phi'], dfSpher2['theta'], 0, 0, len(dfSpher2))
+# vMFmean = spherical_kde.distributions.VonMises_mean(dfSpher['phi'], dfSpher['theta'])
+# vMFsd = spherical_kde.distributions.VonMises_std(dfSpher['phi'], dfSpher['theta'])
+kl12 = spherical_kde.utils.spherical_kullback_liebler(vMFdist1, vMFdist2)
+print('done 12')
+kl23 = spherical_kde.utils.spherical_kullback_liebler(vMFdist2, vMFdist3)
+print('done 23')
+kl34 = spherical_kde.utils.spherical_kullback_liebler(vMFdist3, vMFdist4)
+print('done 34')
+kl13 = spherical_kde.utils.spherical_kullback_liebler(vMFdist1, vMFdist3)
+print('done 13')
+kl14 = spherical_kde.utils.spherical_kullback_liebler(vMFdist1, vMFdist4)
+print('done 14')
+kl24 = spherical_kde.utils.spherical_kullback_liebler(vMFdist2, vMFdist4)
+print('done 24')
+
+#%%
