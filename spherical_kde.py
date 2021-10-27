@@ -10,7 +10,7 @@ import cartopy
 import spherical_kde.utils
 from matplotlib import pyplot as plt
                                  
-#%%
+
 numbers = re.compile(r'(\d+)')
 def numericalSort(value):
     parts = numbers.split(value)
@@ -23,7 +23,7 @@ def addSpherCoords(xyz):
     z = pd.to_numeric(xyz['z'])
     xyz['r'] = np.sqrt(x**2 + y**2 + z**2)
     xyz['theta'] = np.arccos(z / (np.sqrt(x**2 + y**2 + z**2)))
-    xyz['phi'] = np.arctan2(y, x) # arctan2 requires (y,x)
+    xyz['phi'] = np.mod(np.arctan2(y, x), np.pi*2)
     return(xyz)
 # double check calculations
 
@@ -165,8 +165,9 @@ for file in all_files:
     dfAccel['x'] = pd.to_numeric(dfAccel['x'])
     dfAccel['y'] = pd.to_numeric(dfAccel['y'])
     dfAccel['z'] = pd.to_numeric(dfAccel['z'])
-    dfSpher = addSpherCoords(dfAccel[100:200])
+    #dfSpher = addSpherCoords(dfAccel[100:200])
 
+    dfSpher = spherical_kde.utils.polar_from_cartesian(dfAccel[['x','y','z']])
 
     # vMF = VonMisesFisher_distribution(dfSpher['phi'], dfSpher['theta'], 0, 0, len(dfSpher))
 
