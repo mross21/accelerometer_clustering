@@ -9,6 +9,9 @@ import spherical_kde
 import cartopy
 import spherical_kde.utils
 from matplotlib import pyplot as plt
+from itertools import combinations
+# gets rid of the warnings for setting var to loc or something
+pd.options.mode.chained_assignment = None
                                  
 
 numbers = re.compile(r'(\d+)')
@@ -16,6 +19,14 @@ def numericalSort(value):
     parts = numbers.split(value)
     parts[1::2] = map(int, parts[1::2])
     return(parts)
+
+def accel_filter(xyz):
+    x = pd.to_numeric(xyz['x'])
+    y = pd.to_numeric(xyz['y'])
+    z = pd.to_numeric(xyz['z'])
+    xyz['r'] = np.sqrt(x**2 + y**2 + z**2)
+    dfOut = xyz.loc[(xyz['r'] >= 0.9) & (xyz['r'] <= 1.1)]
+    return(dfOut)
 
 def addSpherCoords(xyz):
     x = pd.to_numeric(xyz['x'])
@@ -25,233 +36,115 @@ def addSpherCoords(xyz):
     xyz['theta'] = np.arccos(z / (np.sqrt(x**2 + y**2 + z**2)))
     xyz['phi'] = np.mod(np.arctan2(y, x), np.pi*2)
     return(xyz)
-# double check calculations
 
-
-
-
-def VonMisesFisher_distribution(phi, theta, phi0, theta0, sigma0):
-    """ Von-Mises Fisher distribution function.
-
-
-    Parameters
-    ----------
-    phi, theta : float or array_like
-        Spherical-polar coordinates to evaluate function at.
-
-    phi0, theta0 : float or array-like
-        Spherical-polar coordinates of the center of the distribution.
-
-    sigma0 : float
-        Width of the distribution.
-
-    Returns
-    -------
-    float or array_like
-        log-probability of the vonmises fisher distribution.
-
-    Notes
-    -----
-    Wikipedia:
-        https://en.wikipedia.org/wiki/Von_Mises-Fisher_distribution
-    """
-    x = cartesian_from_polar(phi, theta)
-    x0 = cartesian_from_polar(phi0, theta0)
-    norm = -np.log(4*np.pi*sigma0**2) - logsinh(1./sigma0**2)
-    return norm + np.tensordot(x, x0, axes=[[0], [0]])/sigma0**2
-
-def VonMisesFisher_sample(phi0, theta0, sigma0, size=None):
-    """ Draw a sample from the Von-Mises Fisher distribution.
-
-    Parameters
-    ----------
-    phi0, theta0 : float or array-like
-        Spherical-polar coordinates of the center of the distribution.
-
-    sigma0 : float
-        Width of the distribution.
-
-    size : int, tuple, array-like
-        number of samples to draw.
-
-    Returns
-    -------
-    phi, theta : float or array_like
-        Spherical-polar coordinates of sample from distribution.
-    """
-    n0 = cartesian_from_polar(phi0, theta0)
-    M = rotation_matrix([0, 0, 1], n0)
-
-    x = np.random.uniform(size=size)
-    phi = np.random.uniform(size=size) * 2*np.pi
-    theta = np.arccos(1 + sigma0**2 *
-                         np.log(1 + (np.exp(-2/sigma0**2)-1) * x))
-    n = cartesian_from_polar(phi, theta)
-
-    x = M.dot(n)
-    phi, theta = polar_from_cartesian(x)
-
-    return phi, theta
-
-def VonMises_mean(phi, theta):
-    """ Von-Mises sample mean.
-
-    Parameters
-    ----------
-    phi, theta : array-like
-        Spherical-polar coordinate samples to compute mean from.
-
-    Returns
-    -------
-    float
-
-        ..math::
-            \sum_i^N x_i / || \sum_i^N x_i ||
-
-    Notes
-    -----
-    Wikipedia:
-        https://en.wikipedia.org/wiki/Von_Mises-Fisher_distribution#Estimation_of_parameters
-    """
-    x = cartesian_from_polar(phi, theta)
-    S = np.sum(x, axis=-1)
-    phi, theta = polar_from_cartesian(S)
-    return phi, theta
-
-def VonMises_std(phi, theta):
-    """ Von-Mises sample standard deviation.
-
-    Parameters
-    ----------
-    phi, theta : array-like
-        Spherical-polar coordinate samples to compute mean from.
-
-    Returns
-    -------
-        solution for
-
-        ..math:: 1/tanh(x) - 1/x = R,
-
-        where
-
-        ..math:: R = || \sum_i^N x_i || / N
-
-    Notes
-    -----
-    Wikipedia:
-        https://en.wikipedia.org/wiki/Von_Mises-Fisher_distribution#Estimation_of_parameters
-        but re-parameterised for sigma rather than kappa.
-    """
-    x = cartesian_from_polar(phi, theta)
-    S = np.sum(x, axis=-1)
-    R = S.dot(S)**0.5/x.shape[-1]
-
-    def f(s):
-        return 1/np.tanh(s)-1./s-R
-
-    kappa = scipy.optimize.brentq(f, 1e-8, 1e8)
-    sigma = kappa**-0.5
-    return sigma
 
 #%%
 pathAccel = '/home/mindy/Desktop/BiAffect-iOS/UnMASCK/BiAffect_data/processed_output/accelerometer/test/'
-pathOut = '/'
+pathOut = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/'
 
 all_files = sorted(glob.glob(pathAccel + "*.parquet"), key = numericalSort)
+sKDEList = []
 for file in all_files:
     dfAccel = pd.read_parquet(file, engine='pyarrow')
-    
     # convert cartesian coordinates to spherical
-    dfAccel['x'] = pd.to_numeric(dfAccel['x'])
-    dfAccel['y'] = pd.to_numeric(dfAccel['y'])
-    dfAccel['z'] = pd.to_numeric(dfAccel['z'])
-    #dfSpher = addSpherCoords(dfAccel[100:200])
+    dfSpher = addSpherCoords(dfAccel)
+    dfSpher['dayNumber'] = dfSpher['dayNumber'].astype(float)
 
-    dfSpher = spherical_kde.utils.polar_from_cartesian(dfAccel[['x','y','z']])
+    # find median theta and phi per session
+    dfMedCoords = dfSpher.groupby(['userID','dayNumber','sessionNumber'])[['theta', 'phi']].median()
+    
+    # filter accel points to be on unit sphere:
+    # filters such that when the median point isn't on unit sphere, session removed
+    # when using raw points, should filter above
+    dfMedians_filter = accel_filter(dfMedCoords)
 
-    # vMF = VonMisesFisher_distribution(dfSpher['phi'], dfSpher['theta'], 0, 0, len(dfSpher))
+    # create KDE per user and day (using KDE of median theta & phi)
+    dfByUser = dfMedians_filter.groupby(['userID', 'dayNumber'])
+    for userAndDay, group in dfByUser:
+        print('user: ' + str(userAndDay[0])) # user
+        print('day: ' + str(userAndDay[1]))  # day number for that user
+        # KDEsamples = spherical_kde.distributions.VonMisesFisher_sample(phi0, theta0, sigma0, size=None)
+        sKDE = spherical_kde.SphericalKDE(group['phi'], group['theta'], weights=None, bandwidth=None, density=100)
+        sKDEList.append((userAndDay[0], userAndDay[1], sKDE))
 
-    # # plot histogram of vMF
-    # # Creating histogram
-    # fig, ax = plt.subplots(figsize =(10, 7))
-    # ax.hist(vMF)
-    # # Show plot
-    # plt.show()
+#%%
+sKDETup = tuple(sKDEList)
+comb = list(combinations(sKDETup, 2))
+#%%
+KL_list = []
+for i in range(0, len(comb)):
+    cmp = comb[i]
+    p = cmp[0][2]
+    q = cmp[1][2]
+    # calculate (P || Q)
+    kl_pq = spherical_kde.utils.spherical_kullback_liebler(p, q)
+    print('User: ' + str(cmp[0][0]) + ' day: ' + str(cmp[0][1]) + ' & User: ' + str(cmp[1][0]) + ' day: ' + str(cmp[1][1]))
+    print('KL(P || Q): %.3f bits' % kl_pq)
+    # calculate (Q || P)
+    kl_qp = spherical_kde.utils.spherical_kullback_liebler(q,p)
+    print('KL(Q || P): %.3f bits' % kl_qp)
+    # calculate symmetric KL
+    symKL = kl_pq + kl_qp
+    print('symmetric KL: %.3f bits' % symKL)
+    print('==============================')
+
+    KL_list.append((cmp[0][0], cmp[0][1], cmp[1][0], cmp[1][1], kl_pq, kl_qp, symKL))
+    i += 1
+#%%
+dfKL = pd.DataFrame(KL_list, columns = ['first_user', 'first_user_day', 'second_user', 'second_user_day', 'KL_pq', 'KL_qp', 'symmetric_KL'])
+dfKL.to_csv(pathOut + 'dfKL_sample.csv', index=False)
 
 
-# %%
-sKDE = spherical_kde.SphericalKDE(dfSpher['phi'], dfSpher['theta'], weights=None, bandwidth=None, density=100)
-
-fig=plt.figure()
-ax = fig.add_subplot(111, projection=cartopy.crs.Robinson()) # Orthographic gives blank plot
-sKDE.plot(ax)
-
-
-
-# could plot samples
-
-# when trying to use full dataframe:
-# MemoryError: Unable to allocate 36.8 GiB for an array with shape (10000, 493877) and data type float64
-
-# %%
-# find KL divergence for diff users
-
-
-# start w/ pair-wise comparison
-# R2 w/phi & theta
-# visually compare kde after find small diff w/ kl
-
-# download matlab (octave)
 
 #%%
 
 #########################################################################################################
-# 2021-10-22
+# # 2021-10-22
 
-# dfSpher includes the spherical coordinates of the accel data
-
-
-f1 = '/home/mindy/Desktop/BiAffect-iOS/UnMASCK/BiAffect_data/processed_output/accelerometer/test/User_3_accelData.parquet'
-f2 = '/home/mindy/Desktop/BiAffect-iOS/UnMASCK/BiAffect_data/processed_output/accelerometer/test/User_4_accelData.parquet'
-f3 = '/home/mindy/Desktop/BiAffect-iOS/UnMASCK/BiAffect_data/processed_output/accelerometer/User_7_accelData.parquet'
-f4 = '/home/mindy/Desktop/BiAffect-iOS/UnMASCK/BiAffect_data/processed_output/accelerometer/User_28_accelData.parquet'
+# # dfSpher includes the spherical coordinates of the accel data
 
 
-
-df1 = pd.read_parquet(f1, engine='pyarrow')
-df2 = pd.read_parquet(f2, engine='pyarrow')
-df3 = pd.read_parquet(f3, engine='pyarrow')
-df4 = pd.read_parquet(f4, engine='pyarrow')
-dfSpher1 = addSpherCoords(df1)
-dfSpher2 = addSpherCoords(df2)
-dfSpher3 = addSpherCoords(df3)
-dfSpher4 = addSpherCoords(df4)
+# f1 = '/home/mindy/Desktop/BiAffect-iOS/UnMASCK/BiAffect_data/processed_output/accelerometer/test/User_3_accelData.parquet'
+# f2 = '/home/mindy/Desktop/BiAffect-iOS/UnMASCK/BiAffect_data/processed_output/accelerometer/test/User_4_accelData.parquet'
+# f3 = '/home/mindy/Desktop/BiAffect-iOS/UnMASCK/BiAffect_data/processed_output/accelerometer/User_7_accelData.parquet'
+# f4 = '/home/mindy/Desktop/BiAffect-iOS/UnMASCK/BiAffect_data/processed_output/accelerometer/User_28_accelData.parquet'
 
 
-#%%
 
-# MIGHT BE TOO LARGE TO RUN AS RAW DATA. FIND MEDIAN PER SESSION?
+# df1 = pd.read_parquet(f1, engine='pyarrow')
+# df2 = pd.read_parquet(f2, engine='pyarrow')
+# df3 = pd.read_parquet(f3, engine='pyarrow')
+# df4 = pd.read_parquet(f4, engine='pyarrow')
+# dfSpher1 = addSpherCoords(df1)
+# dfSpher2 = addSpherCoords(df2)
+# dfSpher3 = addSpherCoords(df3)
+# dfSpher4 = addSpherCoords(df4)
 
 
-vMFdist1 = spherical_kde.SphericalKDE(dfSpher1['phi'][0:100], dfSpher1['theta'][0:100], weights=None, bandwidth=None, density=100)
-vMFdist2 = spherical_kde.SphericalKDE(dfSpher2['phi'][0:100], dfSpher2['theta'][0:100], weights=None, bandwidth=None, density=100)
-vMFdist3 = spherical_kde.SphericalKDE(dfSpher3['phi'][0:100], dfSpher3['theta'][0:100], weights=None, bandwidth=None, density=100)
-vMFdist4 = spherical_kde.SphericalKDE(dfSpher4['phi'][0:100], dfSpher4['theta'][0:100], weights=None, bandwidth=None, density=100)
+# #%%
 
-#spherical_kde.distributions.VonMisesFisher_distribution(dfSpher2['phi'], dfSpher2['theta'], 0, 0, len(dfSpher2))
-# vMFmean = spherical_kde.distributions.VonMises_mean(dfSpher['phi'], dfSpher['theta'])
-# vMFsd = spherical_kde.distributions.VonMises_std(dfSpher['phi'], dfSpher['theta'])
-kl12 = spherical_kde.utils.spherical_kullback_liebler(vMFdist1, vMFdist2)
-print('done 12')
-kl23 = spherical_kde.utils.spherical_kullback_liebler(vMFdist2, vMFdist3)
-print('done 23')
-kl34 = spherical_kde.utils.spherical_kullback_liebler(vMFdist3, vMFdist4)
-print('done 34')
-kl13 = spherical_kde.utils.spherical_kullback_liebler(vMFdist1, vMFdist3)
-print('done 13')
-kl14 = spherical_kde.utils.spherical_kullback_liebler(vMFdist1, vMFdist4)
-print('done 14')
-kl24 = spherical_kde.utils.spherical_kullback_liebler(vMFdist2, vMFdist4)
-print('done 24')
+# # MIGHT BE TOO LARGE TO RUN AS RAW DATA. FIND MEDIAN PER SESSION?
+
+
+# vMFdist1 = spherical_kde.SphericalKDE(dfSpher1['phi'][0:100], dfSpher1['theta'][0:100], weights=None, bandwidth=None, density=100)
+# vMFdist2 = spherical_kde.SphericalKDE(dfSpher2['phi'][0:100], dfSpher2['theta'][0:100], weights=None, bandwidth=None, density=100)
+# vMFdist3 = spherical_kde.SphericalKDE(dfSpher3['phi'][0:100], dfSpher3['theta'][0:100], weights=None, bandwidth=None, density=100)
+# vMFdist4 = spherical_kde.SphericalKDE(dfSpher4['phi'][0:100], dfSpher4['theta'][0:100], weights=None, bandwidth=None, density=100)
+
+# #spherical_kde.distributions.VonMisesFisher_distribution(dfSpher2['phi'], dfSpher2['theta'], 0, 0, len(dfSpher2))
+# # vMFmean = spherical_kde.distributions.VonMises_mean(dfSpher['phi'], dfSpher['theta'])
+# # vMFsd = spherical_kde.distributions.VonMises_std(dfSpher['phi'], dfSpher['theta'])
+# kl12 = spherical_kde.utils.spherical_kullback_liebler(vMFdist1, vMFdist2)
+# print('done 12')
+# kl23 = spherical_kde.utils.spherical_kullback_liebler(vMFdist2, vMFdist3)
+# print('done 23')
+# kl34 = spherical_kde.utils.spherical_kullback_liebler(vMFdist3, vMFdist4)
+# print('done 34')
+# kl13 = spherical_kde.utils.spherical_kullback_liebler(vMFdist1, vMFdist3)
+# print('done 13')
+# kl14 = spherical_kde.utils.spherical_kullback_liebler(vMFdist1, vMFdist4)
+# print('done 14')
+# kl24 = spherical_kde.utils.spherical_kullback_liebler(vMFdist2, vMFdist4)
+# print('done 24')
 
 #%%
