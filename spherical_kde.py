@@ -5,14 +5,14 @@ import numpy as np
 import re
 import glob
 import scipy.optimize
-import spherical_kde
 import cartopy
-import spherical_kde.utils
+import spherical_kde
 from matplotlib import pyplot as plt
 from itertools import combinations
 # gets rid of the warnings for setting var to loc or something
 pd.options.mode.chained_assignment = None
                                  
+#%%
 
 numbers = re.compile(r'(\d+)')
 def numericalSort(value):
@@ -46,20 +46,21 @@ all_files = sorted(glob.glob(pathAccel + "*.parquet"), key = numericalSort)
 sKDEList = []
 for file in all_files:
     dfAccel = pd.read_parquet(file, engine='pyarrow')
-    # convert cartesian coordinates to spherical
-    dfSpher = addSpherCoords(dfAccel)
-    dfSpher['dayNumber'] = dfSpher['dayNumber'].astype(float)
 
-    # find median theta and phi per session
-    dfMedCoords = dfSpher.groupby(['userID','dayNumber','sessionNumber'])[['theta', 'phi']].median()
-    
+    # find median xyz per session
+    dfMedCoords = dfAccel.groupby(['userID','dayNumber','sessionNumber'])[['x', 'y', 'z']].median()
+
     # filter accel points to be on unit sphere:
     # filters such that when the median point isn't on unit sphere, session removed
     # when using raw points, should filter above
     dfMedians_filter = accel_filter(dfMedCoords)
 
+    # convert cartesian coordinates to spherical
+    dfSpher = addSpherCoords(dfMedians_filter)
+    # dfSpher['dayNumber'] = dfSpher['dayNumber'].astype(float)
+
     # create KDE per user and day (using KDE of median theta & phi)
-    dfByUser = dfMedians_filter.groupby(['userID', 'dayNumber'])
+    dfByUser = dfSpher.groupby(['userID', 'dayNumber'])
     for userAndDay, group in dfByUser:
         print('user: ' + str(userAndDay[0])) # user
         print('day: ' + str(userAndDay[1]))  # day number for that user
