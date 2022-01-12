@@ -1,23 +1,23 @@
 #%%
 import pandas as pd
 
-jHoriz = '/home/mindy/Desktop/Horizontal_Session.json'
+file = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/test_data/flat_on_back.json'
 
-Horiz = pd.read_json(jHoriz, orient='index')
-dfHoriz = pd.DataFrame(Horiz[0][1])
+j = pd.read_json(file, orient='index')
+df = pd.DataFrame(j[0][1])
 
-dfHoriz.to_csv('/home/mindy/Desktop/horiz_test_session.csv', index=False)
+df.to_csv('/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/test_data/flat_on_back.csv', index=False)
 
 print('finish')
 # %%
 import json
-jVert = '/home/mindy/Desktop/Vertical_Session.json'
+file = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/test_data/right_side.json'
 
-with open(jVert, 'r') as j:
+with open(file, 'r') as j:
      contents = json.loads(j.read())
-dfVert = pd.DataFrame(contents['accelerations'])
-dfVert[['x', 'y', 'z']]
-dfVert.to_csv('/home/mindy/Desktop/vert_test_session.csv', index=False)
+df = pd.DataFrame(contents['accelerations'])
+df[['x', 'y', 'z']]
+df.to_csv('/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/test_data/right_side.csv', index=False)
 
 print('finish')
 # %%
