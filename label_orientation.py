@@ -1,9 +1,11 @@
 #%%
 ## LABEL SESSION PHONE ORIENTATION
+# based on median XYZ values
 
 import pandas as pd
 import numpy as np
 
+# label session orientation
 def label_orientation(session):
     # Possible orientations:
         # upright
@@ -56,6 +58,7 @@ def label_orientation(session):
         print('session has no orientation label')
     return(label)
 
+# label session as horizontal or not horizontal
 def binary_orientation(session):
     x = np.nanmedian(session['x'])
     if abs(x) >= 0.5:
@@ -68,6 +71,8 @@ def binary_orientation(session):
 
 
 #%%
+## TEST FUNCTIONS
+
 # label Faraz's test data
 import glob
 
@@ -78,12 +83,13 @@ for filename in files:
     df = pd.read_csv(filename, index_col=False)
     print(filename)
 
-    # l = label_orientation(df)
-    # print(l)
+    l = label_orientation(df)
+    print(l)
+    # all sessions labeled correctly except flat_on_back. 
+    # data functionally looks like upright  
 
     h = binary_orientation(df)
     print(h)
-# all sessions labeled correctly except flat_on_back. 
-# data functionally looks like upright
+
 # %%
 
