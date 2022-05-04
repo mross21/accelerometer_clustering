@@ -59,9 +59,6 @@ dfDiag = pd.read_csv(diag_file, index_col=False)
 
 all_files = sorted(glob.glob(pathAccel + "*.parquet"), key = numericalSort)
 
-# dictClustID = {}
-# dictClustID['user'] = {}
-
 clust_list = []
 
 for file in all_files:
@@ -74,46 +71,18 @@ for file in all_files:
 
     dfByUser = dfAccel.groupby(['userID', 'weekNumber'])
     for userAndWk, group in dfByUser:
-        print('user: ' + str(userAndWk[0])) # user
-        print('week: ' + str(userAndWk[1]))  # week number for that user
         for i in range(len(group)): # loop through coordinates in user's week
-            print('index: ' + str(i))
+            print('user: ' + str(userAndWk[0])) # user
+            print('week: ' + str(userAndWk[1]))  # week number for that user
+            print('index: ' + str(i) + '/' + str(len(group)))
+            print('---------')
             xyz = group[['x','y','z']].iloc[i]
             clustGrp = dfMeans.loc[(dfMeans['userID'] == userAndWk[0]) & (dfMeans['weekNumber'] == userAndWk[1])]
             cID = find_clust_label(xyz, clustGrp, 0.5) # what should the tolerance be?
-            print('cID: ' + str(cID))
             clust_list.append(cID)
-            print('appended')
 
     dfAccel['cluster'] = clust_list
 
     dfAccel.to_csv(pathOut + 'user_' + str(userAndWk[0]) + '_accelData_clusters.csv', index=False)
-
-
-
-
-
-
-
-
-
-
-
-#df['avgDispSession'] = df.apply(lambda x: sessionDict[x['SubjectID']][x['recordId']], axis=1)
-
-                
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 # %%
