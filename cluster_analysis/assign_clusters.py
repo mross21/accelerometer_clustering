@@ -60,8 +60,6 @@ dfDiag = pd.read_csv(diag_file, index_col=False)
 
 all_files = sorted(glob.glob(pathAccel + "*.parquet"), key = numericalSort)
 
-clust_list = []
-
 for file in all_files:
     # dfAccel = pd.read_parquet(file, engine='pyarrow')
     dfAccel = pd.read_parquet(file, engine='pyarrow')
@@ -70,9 +68,12 @@ for file in all_files:
     # convert cartesian coordinates to spherical
     #addSpherCoords(dfAccel)
 
+    clust_list = []
     dfByUser = dfAccel.groupby(['userID', 'weekNumber'])
     for userAndWk, group in dfByUser:
-        # if group['weekNumber'].iloc[0] == 1:
+        print('user: ' + str(userAndWk[0])) # user
+        print('week: ' + str(userAndWk[1]))  # week number for that user
+        # if group['userID'].iloc[0] == 1:
         #     continue
 
         for i in range(len(group)): # loop through coordinates in user's week
@@ -83,6 +84,10 @@ for file in all_files:
             xyz = group[['x','y','z']].iloc[i]
             clustGrp = dfMeans.loc[(dfMeans['userID'] == userAndWk[0]) & (dfMeans['weekNumber'] == userAndWk[1])]
             if len(clustGrp) == 0:
+                print('len cluster means is 0')
+                print('user: ' + str(userAndWk[0])) # user
+                print('week: ' + str(userAndWk[1]))
+                cID = 0
                 continue
             cID = find_clust_label(xyz, clustGrp, 0.8) # what should the tolerance be?
             clust_list.append(cID)
