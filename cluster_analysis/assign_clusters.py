@@ -45,6 +45,7 @@ def find_clust_label(coord, dfCMean, tol):
     # cos = 1 means vectors overlap (very similar)
     if (dfCMean.iloc[0]['x'] == 0) & (dfCMean.iloc[0]['y'] == 0) & (dfCMean.iloc[0]['z'] == 0):
         cID = 0
+        return(cID)
     dfCMean['cos'] = dfCMean.apply(lambda row: cosine_sim(coord, row[['x','y','z']]), axis=1)
     if max(dfCMean['cos']) < tol: # if max cos < tol, then coord outside all clusters
         cID = 0 # no cluster found
@@ -71,6 +72,9 @@ for file in all_files:
 
     dfByUser = dfAccel.groupby(['userID', 'weekNumber'])
     for userAndWk, group in dfByUser:
+        # if group['weekNumber'].iloc[0] == 1:
+        #     continue
+
         for i in range(len(group)): # loop through coordinates in user's week
             print('user: ' + str(userAndWk[0])) # user
             print('week: ' + str(userAndWk[1]))  # week number for that user
