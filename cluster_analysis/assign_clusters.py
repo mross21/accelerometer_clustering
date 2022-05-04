@@ -10,6 +10,7 @@ cluster_file = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/mat
 phq_file = '/home/mindy/Desktop/BiAffect-iOS/UnMASCK/BiAffect_data/processed_output/PHQ/allUsers_PHQdata.csv'
 diag_file = '/home/mindy/Desktop/BiAffect-iOS/UnMASCK/BiAffect_data/processed_output/diagnosis/allUsers_diagnosisData.csv'
 pathAccel = '/home/mindy/Desktop/BiAffect-iOS/UnMASCK/BiAffect_data/processed_output/accelerometer/'
+pathOut = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/accel_with_clusters/'
 
 numbers = re.compile(r'(\d+)')
 def numericalSort(value):
@@ -34,19 +35,21 @@ def addSpherCoords(xyz): # from spherical_kde function
     xyz['theta'] = round(np.arccos(z / np.sqrt(x**2 + y**2 + z**2)),2) 
     return(xyz)
 
-def cosine_similarity(coord, cmean):
-    A = np.array(coord)
-    B = np.array(cmean)
+def cosine_sim(coord, cmean):
+    A = pd.to_numeric(np.squeeze(np.asarray(coord)))
+    B = pd.to_numeric(np.squeeze(np.asarray(cmean)))
     cos = np.dot(A,B)/(norm(A)*norm(B))
     return(cos)
 
 def find_clust_label(coord, dfCMean, tol):
     # cos = 0 means vectors overlap (very similar)
-    dfCMean['cos'] = dfCMean.apply(lambda row: cosine_similarity(coord, row[['x','y','z']], axis=1))
+    if (dfCMean.iloc[0]['x'] == 0) & (dfCMean.iloc[0]['y'] == 0) & (dfCMean.iloc[0]['z'] == 0):
+        cID = 0
+    dfCMean['cos'] = dfCMean.apply(lambda row: cosine_sim(coord, row[['x','y','z']]), axis=1)
     if min(dfCMean['cos']) > tol: # if min cos > tol, then coord outside all clusters
-        cID = float('Nan') # no cluster found
+        cID = 0 # no cluster found
     else:
-        cID = dfCMean.loc[min(dfCMean['cos'])]['clustID'] # ID based on min cos
+        cID = dfCMean.loc[dfCMean['cos'] == min(dfCMean['cos'])]['clustID'].iloc[0] # ID based on min cos
     return(cID)
 
 #%%
@@ -73,14 +76,18 @@ for file in all_files:
     for userAndWk, group in dfByUser:
         print('user: ' + str(userAndWk[0])) # user
         print('week: ' + str(userAndWk[1]))  # week number for that user
-        for i in len(group): # loop through coordinates in user's week
-            xyz = group[['x','y','z']][i]
-            clustGrp = dfMeans.loc[dfMeans['userID'] == userAndWk[0] & dfMeans['weekNumber'] == userAndWk[1]]
-            cID = find_clust_label(xyz, clustGrp, 0.2) # what should the tolerance be?
-            #dictClustID[userAndWk[0]][userAndWk[1]] = cID
-            clust_list = clust_list.append((userAndWk[0],userAndWk[1],xyz['x'],xyz['y'],xyz['z'],cID)) #user,wk,x,y,z,cID
+        for i in range(len(group)): # loop through coordinates in user's week
+            print('index: ' + str(i))
+            xyz = group[['x','y','z']].iloc[i]
+            clustGrp = dfMeans.loc[(dfMeans['userID'] == userAndWk[0]) & (dfMeans['weekNumber'] == userAndWk[1])]
+            cID = find_clust_label(xyz, clustGrp, 0.5) # what should the tolerance be?
+            print('cID: ' + str(cID))
+            clust_list.append(cID)
+            print('appended')
 
-dfClust = pd.DataFrame(clust_list, columns = ['userID','weekNumber','x','y','z','cluster'])
+    dfAccel['cluster'] = clust_list
+
+    dfAccel.to_csv(pathOut + 'user_' + str(userAndWk[0]) + '_accelData_clusters.csv', index=False)
 
 
 
@@ -108,3 +115,5 @@ dfClust = pd.DataFrame(clust_list, columns = ['userID','weekNumber','x','y','z',
 
 
 
+
+# %%
