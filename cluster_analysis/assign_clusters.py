@@ -42,14 +42,14 @@ def cosine_sim(coord, cmean):
     return(cos)
 
 def find_clust_label(coord, dfCMean, tol):
-    # cos = 0 means vectors overlap (very similar)
+    # cos = 1 means vectors overlap (very similar)
     if (dfCMean.iloc[0]['x'] == 0) & (dfCMean.iloc[0]['y'] == 0) & (dfCMean.iloc[0]['z'] == 0):
         cID = 0
     dfCMean['cos'] = dfCMean.apply(lambda row: cosine_sim(coord, row[['x','y','z']]), axis=1)
-    if min(dfCMean['cos']) > tol: # if min cos > tol, then coord outside all clusters
+    if max(dfCMean['cos']) < tol: # if max cos < tol, then coord outside all clusters
         cID = 0 # no cluster found
     else:
-        cID = dfCMean.loc[dfCMean['cos'] == min(dfCMean['cos'])]['clustID'].iloc[0] # ID based on min cos
+        cID = dfCMean.loc[dfCMean['cos'] == max(dfCMean['cos'])]['clustID'].iloc[0] # ID based on max cos
     return(cID)
 
 #%%
@@ -80,7 +80,7 @@ for file in all_files:
             if len(clustGrp) == 0:
                 continue
             clustGrp = dfMeans.loc[(dfMeans['userID'] == userAndWk[0]) & (dfMeans['weekNumber'] == userAndWk[1])]
-            cID = find_clust_label(xyz, clustGrp, 0.5) # what should the tolerance be?
+            cID = find_clust_label(xyz, clustGrp, 0.8) # what should the tolerance be?
             clust_list.append(cID)
 
     dfAccel['cluster'] = clust_list
