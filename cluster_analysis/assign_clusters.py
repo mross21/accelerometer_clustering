@@ -77,9 +77,9 @@ for file in all_files:
             print('index: ' + str(i) + '/' + str(len(group)))
             print('---------')
             xyz = group[['x','y','z']].iloc[i]
+            clustGrp = dfMeans.loc[(dfMeans['userID'] == userAndWk[0]) & (dfMeans['weekNumber'] == userAndWk[1])]
             if len(clustGrp) == 0:
                 continue
-            clustGrp = dfMeans.loc[(dfMeans['userID'] == userAndWk[0]) & (dfMeans['weekNumber'] == userAndWk[1])]
             cID = find_clust_label(xyz, clustGrp, 0.8) # what should the tolerance be?
             clust_list.append(cID)
 
