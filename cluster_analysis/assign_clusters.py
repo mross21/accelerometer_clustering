@@ -86,7 +86,7 @@ def regular_on_sphere_points(r,num):
             points.append([x,y,z])
     return points
 
-#%%
+
 dfClusters = pd.read_csv(cluster_file, index_col=False)
 dfMeans = pd.read_csv(cluster_means_file, index_col=False)
 dfPHQ = pd.read_csv(phq_file, index_col=False)
