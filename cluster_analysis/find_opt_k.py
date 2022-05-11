@@ -1,10 +1,11 @@
 #%% 
 import pandas as pd
-from itertools import combinations
-from sklearn.metrics.pairwise import haversine_distances
+# from itertools import combinations
+# from sklearn.metrics.pairwise import haversine_distances
 import numpy as np
 from scipy.spatial.distance import squareform, pdist
-from haversine import haversine
+# from haversine import haversine
+from math import cos, sin, asin, sqrt
 
 
 pathIn = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/matrix/kde_sampled_points/'
@@ -14,39 +15,69 @@ file500 = 'coords_with_KDEdensities-500pts.csv'
 df = pd.read_csv(pathIn + file500, index_col=False)
 
 #%%
+# taken from haversine package (removed conversion to radians)
+# https://github.com/mapado/haversine/blob/main/haversine/haversine.py
+def haversine_dist(pt1,pt2): # theta, phi
+    lat1, lng1 = pt1
+    lat2, lng2 = pt2
+    # calculate haversine
+    lat = lat2 - lat1
+    lng = lng2 - lng1
+    d = sin(lat * 0.5) ** 2 + cos(lat1) * cos(lat2) * sin(lng * 0.5) ** 2
+    return 2  * asin(sqrt(d))
+
+#%%
 # subset to user 1 week 1
 df = df.loc[(df['userID'] == 1) & (df['weekNumber'] == 1)]
+# get distance matrix of haversine distances between points
+dm = pd.DataFrame(squareform(pdist(df[['theta','phi']], metric=haversine_dist)), index=df.index, columns=df.index)
 
-# create combinations of indices of the coordinates
-combos = list(combinations(df.index, 2))
-for idx in len(combos):
-    # df row index of points to compare
-    iPt1 = combos[idx][0]
-    iPt2 = combos[idx][1]
-    # get phi/theta point for each index
-    pt1 = tuple(df[['phi','theta']].iloc[iPt1]) # as (phi, theta)
-    pt2 = tuple(df[['phi','theta']].iloc[iPt2]) # as (phi, theta)
-    # find distance between points
-    gcdist = great_circle_distance(1,pt1,pt2)
+num_clusters = 0
+
+for idx in range(len(dm)):
+    print('point: ' + str(idx))
+    # sort distances by ascending order
+    dmSort = dm[idx].sort_values()
+    # get list of indices of idx point and 10 closest points
+    idxClosePts = dmSort[0:75].index 
+    # get corresponding densities of those points
+    densities = df['density'].iloc[idxClosePts]
+    # if idx point has largest density, add cluster
+    add_clust = np.where(max(densities) == densities.iloc[0], 1, 0)
+    num_clusters = num_clusters + add_clust
+    print('clusters: ' + str(num_clusters))
+    print('=====')
 
 
-
-
-dm = pd.DataFrame(squareform(pdist(df, metric=haversine)), index=df.index, columns=df.index)
-
+print('finish')
 
 
 #%%
-def great_circle_distance(r, coord1, coord2):
-    # phi ~ longitude
-    # theta ~ latitude
+
+###############################################################################################
+# NOT COMPLETE OR NOT WORKING
 
 
-    return r * acos(sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(lon1 - lon2))
+# def great_circle_distance(r, coord1, coord2):
+#     # phi ~ longitude
+#     # theta ~ latitude
 
-[great_circle_distance(*combo) for combo in combinations_with_replacement(list_of_coords,2)]
 
+#     return r * acos(sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(lon1 - lon2))
 
+# [great_circle_distance(*combo) for combo in combinations_with_replacement(list_of_coords,2)]
+
+# # create combinations of indices of the coordinates
+# combos = list(combinations(df.index, 2))
+# for idx in len(combos):
+#     # df row index of points to compare
+#     iPt1 = combos[idx][0]
+#     iPt2 = combos[idx][1]
+#     # get phi/theta point for each index
+#     pt1 = tuple(df[['phi','theta']].iloc[iPt1]) # as (phi, theta)
+#     pt2 = tuple(df[['phi','theta']].iloc[iPt2]) # as (phi, theta)
+#     # find distance between points
+#     gcdist = great_circle_distance(1,pt1,pt2)
 
 
 
