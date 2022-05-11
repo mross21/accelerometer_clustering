@@ -53,3 +53,23 @@ dfr.to_csv('/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/matrix/
 
 
 # %%
+import numpy as np
+dfv1 = pd.read_csv('/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/matrix/k_list_pt_noRot_cubicinterp.csv', index_col=False, header=None)
+dfv2 = pd.read_csv('/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/matrix/k_list_pt_noRot_cubicinterp_varDensity.csv', index_col=False, header=None)
+
+dfv1.columns = ['userID','weekNumber','k1']
+dfv2.columns = ['userID','weekNumber','k2']
+
+dfv = pd.merge(dfv1,dfv2, on = ['userID','weekNumber'],how='outer')
+dfv['flag'] = np.where(dfv['k1'] == dfv['k2'], 0,1)
+dfv2 = dfv.loc[dfv['flag'] == 1]
+
+dfv2.to_csv('/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/matrix/k_list_freq_varDensity-differences.csv',index=False)
+
+
+# dfv['k_mode'] = dfv[['k1','k2']].mode(axis=1).iloc[:, 0]
+
+# dfDiff = pd.concat([dfv1,dfv2]).drop_duplicates(keep=False)
+
+# dfv.to_csv('/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/matrix/k_list_freq_varDensity.csv',index=False)
+# %%
