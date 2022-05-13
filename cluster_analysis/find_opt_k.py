@@ -9,11 +9,12 @@ from math import cos, sin, asin, sqrt
 
 
 pathIn = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/matrix/kde_sampled_points/'
+pathOut = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/optimize_k/'
 file2500 = 'coords_with_KDEdensities-2500pts.csv'
 file1000 = 'coords_with_KDEdensities-1000pts.csv'
 file500 = 'coords_with_KDEdensities-500pts.csv'
 
-df = pd.read_csv(pathIn + file500, index_col=False)
+df = pd.read_csv(pathIn + file1000, index_col=False)
 
 # taken from haversine package (removed conversion to radians)
 # https://github.com/mapado/haversine/blob/main/haversine/haversine.py
@@ -40,35 +41,36 @@ def find_optK(distance_matrix, density_list,nNeighbors):
         num_clusters = num_clusters + add_clust
     return(num_clusters)
 
-#%%
 # # subset to user 1 week 1
 # df = df.loc[(df['userID'] == 1) & (df['weekNumber'] == 1)]
 
 # variable to group user's data
 grouping = 'weekNumber'
 # number of nearest neighbors to compare densities to
-nPts = [40,50,60,70,80, 90, 100, 120]
+nPts = [50,75,100,125,150,175,200]
 kList = []
-for n in nPts:
-    dfByGroup = df.groupby(['userID', grouping])
-    for userGrp, grp in dfByGroup:
+dfByGroup = df.groupby(['userID', grouping])
+for userGrp, grp in dfByGroup:
         # reset indexing
-        grp = grp.reset_index()
-        user = userGrp[0]
-        print('user: ' + str(user))
-        groupedBy = userGrp[1]
-        print('grouping: ' + str(groupedBy))
-        if user > 3:
-            break
+    grp = grp.reset_index()
+    user = userGrp[0]
+    print('user: ' + str(user))
+    groupedBy = userGrp[1]
+    print(str(grouping) + str(groupedBy))
+    # if user > 3:
+    #     break
+    for n in nPts:
+        print('n: ' + str(n))
         # get distance matrix of haversine distances between points
         dm = pd.DataFrame(squareform(pdist(grp[['theta','phi']], metric=haversine_dist)), index=grp.index, columns=grp.index)
         # get number of clusters for grouping
         numK = find_optK(dm, grp['density'],n)
         kList.append((user,groupedBy,n,numK))
         print('clusters: ' + str(numK))
-        print('=====')
+    print('=====')
 
 dfK = pd.DataFrame(kList, columns = ['userID', grouping, 'n_neighbors','k'])
+dfK.to_csv(pathOut + 'test_parameters_for_optK_1000pts.csv', index=False)
 
 print('finish')
 
