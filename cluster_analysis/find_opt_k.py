@@ -13,8 +13,12 @@ pathOut = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/optimize
 file2500 = 'coords_with_KDEdensities-2500pts.csv'
 file1000 = 'coords_with_KDEdensities-1000pts.csv'
 file500 = 'coords_with_KDEdensities-500pts.csv'
+file1000_v2 = 'coords_with_KDEdensities_bw02-1000pts.csv'
+file1000_v3 = 'coords_with_KDEdensities_bw015-1000pts.csv'
 
-df = pd.read_csv(pathIn + file1000, index_col=False)
+
+
+df = pd.read_csv(pathIn + file1000_v3, index_col=False)
 
 # taken from haversine package (removed conversion to radians)
 # https://github.com/mapado/haversine/blob/main/haversine/haversine.py
@@ -47,7 +51,7 @@ def find_optK(distance_matrix, density_list,nNeighbors):
 # variable to group user's data
 grouping = 'weekNumber'
 # number of nearest neighbors to compare densities to
-nPts = [50,75,100,125,150,175,200]
+nPts = [25,50,75,100,125,150,175,200]
 kList = []
 dfByGroup = df.groupby(['userID', grouping])
 for userGrp, grp in dfByGroup:
@@ -70,7 +74,7 @@ for userGrp, grp in dfByGroup:
     print('=====')
 
 dfK = pd.DataFrame(kList, columns = ['userID', grouping, 'n_neighbors','k'])
-dfK.to_csv(pathOut + 'test_parameters_for_optK_1000pts.csv', index=False)
+dfK.to_csv(pathOut + 'test_parameters_for_optK_1000pts_KDEbw015.csv', index=False)
 
 print('finish')
 
