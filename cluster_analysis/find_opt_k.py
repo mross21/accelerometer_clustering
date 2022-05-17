@@ -10,15 +10,13 @@ from math import cos, sin, asin, sqrt
 
 pathIn = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/matrix/kde_sampled_points/'
 pathOut = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/optimize_k/'
-file2500 = 'coords_with_KDEdensities-2500pts.csv'
+# file2500 = 'coords_with_KDEdensities-2500pts.csv'
 file1000 = 'coords_with_KDEdensities-1000pts.csv'
-file500 = 'coords_with_KDEdensities-500pts.csv'
-file1000_v2 = 'coords_with_KDEdensities_bw02-1000pts.csv'
-file1000_v3 = 'coords_with_KDEdensities_bw015-1000pts.csv'
+# file500 = 'coords_with_KDEdensities-500pts.csv'
+# file1000_v2 = 'coords_with_KDEdensities_bw02-1000pts.csv'
+# file1000_v3 = 'coords_with_KDEdensities_bw015-1000pts.csv'
 
-
-
-df = pd.read_csv(pathIn + file1000_v3, index_col=False)
+df = pd.read_csv(pathIn + file1000, index_col=False)
 
 # taken from haversine package (removed conversion to radians)
 # https://github.com/mapado/haversine/blob/main/haversine/haversine.py
@@ -31,7 +29,8 @@ def haversine_dist(pt1,pt2): # theta, phi
     d = sin(lat * 0.5) ** 2 + cos(lat1) * cos(lat2) * sin(lng * 0.5) ** 2
     return 2  * asin(sqrt(d))
 
-def find_optK(distance_matrix, density_list,nNeighbors):
+def find_optK(distance_matrix,density_list,nNeighbors):
+    denTol = max(density_list)/10
     num_clusters = 0
     for i in range(len(distance_matrix)):
         # sort distances by ascending order
@@ -40,8 +39,8 @@ def find_optK(distance_matrix, density_list,nNeighbors):
         idxClosePts = dmSort[0:nNeighbors].index 
         # get corresponding densities of those points
         densities = density_list.iloc[idxClosePts]
-        # if idx point has largest density and density > 0.3, add cluster
-        add_clust = np.where((max(densities) == densities.iloc[0]) & (densities.iloc[0] > 0.3), 1, 0)
+        # if idx point has largest density and density > 1/10 max density, add cluster
+        add_clust = np.where((max(densities) == densities.iloc[0]) & (densities.iloc[0] >= denTol), 1, 0)
         num_clusters = num_clusters + add_clust
     return(num_clusters)
 
@@ -51,7 +50,7 @@ def find_optK(distance_matrix, density_list,nNeighbors):
 # variable to group user's data
 grouping = 'weekNumber'
 # number of nearest neighbors to compare densities to
-nPts = [25,50,75,100,125,150,175,200]
+nPts = [60,80,90,100,110,120,130] # [25,50,75,100,125,150,175,200]
 kList = []
 dfByGroup = df.groupby(['userID', grouping])
 for userGrp, grp in dfByGroup:
@@ -61,8 +60,8 @@ for userGrp, grp in dfByGroup:
     print('user: ' + str(user))
     groupedBy = userGrp[1]
     print(str(grouping) + str(groupedBy))
-    # if user > 3:
-    #     break
+    if user > 4:
+        break
     for n in nPts:
         print('n: ' + str(n))
         # get distance matrix of haversine distances between points
@@ -74,7 +73,7 @@ for userGrp, grp in dfByGroup:
     print('=====')
 
 dfK = pd.DataFrame(kList, columns = ['userID', grouping, 'n_neighbors','k'])
-dfK.to_csv(pathOut + 'test_parameters_for_optK_1000pts_KDEbw015.csv', index=False)
+dfK.to_csv(pathOut + 'test_parameters_for_optK_1000pts_KDEbw01_tolTenthMaxDensity.csv', index=False)
 
 print('finish')
 
@@ -128,32 +127,5 @@ print('finish')
 # pts = [(1,2), (3,4), (5,6), (7,8), (9,10), (11,12)]
 
 # [distance(*pair) for pair in zip(repeat(pts[0]),pts[1:])]
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 # %%
