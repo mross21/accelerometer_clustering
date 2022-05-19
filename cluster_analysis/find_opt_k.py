@@ -76,7 +76,7 @@ for userGrp, grp in dfByGroup:
     print('=====')
 
 dfK = pd.DataFrame(kList, columns = ['userID', grouping, 'n_neighbors','k'])
-dfK.to_csv(pathOut + 'test_parameters_for_optK_1000pts_KDEbw01_sample03DensityThresh-euclidean.csv', index=False)
+dfK.to_csv(pathOut + 'test_parameters_for_optK_1000pts_KDEbw01_sample03DensityThresh.csv', index=False)
 
 print('finish')
 

@@ -87,26 +87,62 @@ def find_optK(distance_matrix,density_list,nNeighbors):
 grp2 = df.loc[(df['userID'] == 1) & (df['weekNumber'] == 4)].reset_index()
 dm2 = pd.DataFrame(squareform(pdist(grp2[['theta','phi']], metric=haversine_dist)), index=grp2.index, columns=grp2.index)
 
-#%%
-i = 990
 n = 9
-# make list of indices of nearest neighbors to index i
-print(dm2[i].sort_values()[0:n])
-l=list(dm2[i].sort_values()[0:n].index)
+nNeighbors= n 
+# numK = find_optKtree(dm, grp['density'],n)
+distance_matrix = dm2
+density_list=grp2['density']
+# densityThresh = 0.3 #max(density_list)/10
+densityThresh=0 # no threshold for now
+num_clusters = 0
 
-# flag colors to highlight
-grp2['color']=0
-for r in grp2.index:
-    if r in l: 
-        grp2['color'].iloc[r] = r/10
-print(grp2.loc[grp2['color'] != 0][['phi','theta','density']])
 
-# plot
-import matplotlib.pyplot as plt
-# ax = plt.axes(projection='3d')
-# ax.scatter(grp2.x, grp2.y, grp2.z, c=grp2.color)
-plt.scatter(grp2.x,grp2.y,c=grp2.color)
-plt.show()
+### might not be able to do for loop? or add in another wandering search? or google python code for trees?
+
+# https://www.delftstack.com/howto/python/trees-in-python/
+
+for i in range(len(distance_matrix)):
+    # sort distances by ascending order
+    dmSort = distance_matrix[i].sort_values()
+    # get list of indices of idx point and 10 closest points
+    idxClosePts = dmSort[0:nNeighbors].index 
+    # get corresponding densities of those points
+    densities = density_list.iloc[idxClosePts]
+    iNext = max(densities).index
+
+
+    # if idx point has largest density [and density > 1/10 max density], add cluster
+    add_clust = np.where((max(densities) == densities.iloc[0]) & (densities.iloc[0] >= densityThresh), 1, 0)
+    num_clusters = num_clusters + add_clust
+
+
+
+
+
+
+#%%
+# grp2 = df.loc[(df['userID'] == 1) & (df['weekNumber'] == 4)].reset_index()
+# dm2 = pd.DataFrame(squareform(pdist(grp2[['theta','phi']], metric=haversine_dist)), index=grp2.index, columns=grp2.index)
+
+# i = 990
+# n = 9
+# # make list of indices of nearest neighbors to index i
+# print(dm2[i].sort_values()[0:n])
+# l=list(dm2[i].sort_values()[0:n].index)
+
+# # flag colors to highlight
+# grp2['color']=0
+# for r in grp2.index:
+#     if r in l: 
+#         grp2['color'].iloc[r] = r/10
+# print(grp2.loc[grp2['color'] != 0][['phi','theta','density']])
+
+# # plot
+# import matplotlib.pyplot as plt
+# # ax = plt.axes(projection='3d')
+# # ax.scatter(grp2.x, grp2.y, grp2.z, c=grp2.color)
+# plt.scatter(grp2.x,grp2.y,c=grp2.color)
+# plt.show()
 
 
 
