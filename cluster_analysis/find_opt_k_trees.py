@@ -23,6 +23,9 @@ df = pd.read_csv(pathIn + file1000, index_col=False)
 def haversine_dist(pt1,pt2): # theta, phi
     lat1, lng1 = pt1
     lat2, lng2 = pt2
+    # convert theta range from 0 to 2pi to -pi to pi
+    lat1 = lat1 - np.pi
+    lat2 = lat2 - np.pi
     # calculate haversine
     lat = lat2 - lat1
     lng = lng2 - lng1
@@ -48,44 +51,45 @@ def find_optK(distance_matrix,density_list,nNeighbors):
 # # subset to user 1 week 1
 # df = df.loc[(df['userID'] == 1) & (df['weekNumber'] == 1)]
 
-# variable to group user's data
-grouping = 'weekNumber'
-# number of nearest neighbors to compare densities to
-nPts = [20,30,40,50,60,70,80,90,100,110,120,130]
-kList = []
-dfByGroup = df.groupby(['userID', grouping])
-for userGrp, grp in dfByGroup:
-        # reset indexing
-    grp = grp.reset_index()
-    user = userGrp[0]
-    print('user: ' + str(user))
-    groupedBy = userGrp[1]
-    print(str(grouping) + str(groupedBy))
-    if user > 1:
-        break
-    for n in nPts:
-        print('n: ' + str(n))
-        # get distance matrix of haversine distances between points
-        dm = pd.DataFrame(squareform(pdist(grp[['theta','phi']], metric=haversine_dist)), index=grp.index, columns=grp.index)
-        # get number of clusters for grouping
-        numK = find_optK(dm, grp['density'],n)
-        kList.append((user,groupedBy,n,numK))
-        print('clusters: ' + str(numK))
-    print('=====')
+# # variable to group user's data
+# grouping = 'weekNumber'
+# # number of nearest neighbors to compare densities to
+# nPts = [20,30,40,50,60,70,80,90,100,110,120,130]
+# kList = []
+# dfByGroup = df.groupby(['userID', grouping])
+# for userGrp, grp in dfByGroup:
+#         # reset indexing
+#     grp = grp.reset_index()
+#     user = userGrp[0]
+#     print('user: ' + str(user))
+#     groupedBy = userGrp[1]
+#     print(str(grouping) + str(groupedBy))
+#     if user > 1:
+#         break
+#     for n in nPts:
+#         print('n: ' + str(n))
+#         # get distance matrix of haversine distances between points
+#         dm = pd.DataFrame(squareform(pdist(grp[['theta','phi']], metric=haversine_dist)), index=grp.index, columns=grp.index)
+#         # get number of clusters for grouping
+#         numK = find_optK(dm, grp['density'],n)
+#         kList.append((user,groupedBy,n,numK))
+#         print('clusters: ' + str(numK))
+#     print('=====')
 
-dfK = pd.DataFrame(kList, columns = ['userID', grouping, 'n_neighbors','k'])
-dfK.to_csv(pathOut + 'test_parameters_for_optK_1000pts_KDEbw01_sample03DensityThresh.csv', index=False)
+# dfK = pd.DataFrame(kList, columns = ['userID', grouping, 'n_neighbors','k'])
+# dfK.to_csv(pathOut + 'test_parameters_for_optK_1000pts_KDEbw01_sample03DensityThresh.csv', index=False)
 
-print('finish')
+# print('finish')
 #%%
 
 ### TESTING THE NEAREST NEIGHBORS
 
 grp2 = df.loc[(df['userID'] == 1) & (df['weekNumber'] == 4)].reset_index()
-dm2 = pd.DataFrame(squareform(pdist(grp2[['theta','phi']], metric='cosine')), index=grp2.index, columns=grp2.index)
+dm2 = pd.DataFrame(squareform(pdist(grp2[['theta','phi']], metric=haversine_dist)), index=grp2.index, columns=grp2.index)
 
-i = 500
-n = 15
+#%%
+i = 990
+n = 9
 # make list of indices of nearest neighbors to index i
 print(dm2[i].sort_values()[0:n])
 l=list(dm2[i].sort_values()[0:n].index)
@@ -95,14 +99,14 @@ grp2['color']=0
 for r in grp2.index:
     if r in l: 
         grp2['color'].iloc[r] = r/10
+print(grp2.loc[grp2['color'] != 0][['phi','theta','density']])
 
 # plot
 import matplotlib.pyplot as plt
-
-ax = plt.axes(projection='3d')
-ax.scatter(grp2.x, grp2.y, grp2.z, c=grp2.color)
-# plt.scatter(grp2.x,grp2.y,c=grp2.color)
-# plt.show()
+# ax = plt.axes(projection='3d')
+# ax.scatter(grp2.x, grp2.y, grp2.z, c=grp2.color)
+plt.scatter(grp2.x,grp2.y,c=grp2.color)
+plt.show()
 
 
 

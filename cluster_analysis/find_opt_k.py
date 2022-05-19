@@ -23,6 +23,9 @@ df = pd.read_csv(pathIn + file1000, index_col=False)
 def haversine_dist(pt1,pt2): # theta, phi
     lat1, lng1 = pt1
     lat2, lng2 = pt2
+    # convert theta range from 0 to 2pi to -pi to pi
+    lat1 = lat1 - np.pi
+    lat2 = lat2 - np.pi
     # calculate haversine
     lat = lat2 - lat1
     lng = lng2 - lng1
@@ -73,7 +76,7 @@ for userGrp, grp in dfByGroup:
     print('=====')
 
 dfK = pd.DataFrame(kList, columns = ['userID', grouping, 'n_neighbors','k'])
-dfK.to_csv(pathOut + 'test_parameters_for_optK_1000pts_KDEbw01_sample03DensityThresh.csv', index=False)
+dfK.to_csv(pathOut + 'test_parameters_for_optK_1000pts_KDEbw01_sample03DensityThresh-euclidean.csv', index=False)
 
 print('finish')
 
