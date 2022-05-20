@@ -1,4 +1,5 @@
 #%% 
+from re import I
 import pandas as pd
 # from itertools import combinations
 # from sklearn.metrics.pairwise import haversine_distances
@@ -47,7 +48,7 @@ def find_optK(distance_matrix,density_list,nNeighbors):
         num_clusters = num_clusters + add_clust
     return(num_clusters)
 
-#%%
+# #%%
 # # subset to user 1 week 1
 # df = df.loc[(df['userID'] == 1) & (df['weekNumber'] == 1)]
 
@@ -80,6 +81,7 @@ def find_optK(distance_matrix,density_list,nNeighbors):
 # dfK.to_csv(pathOut + 'test_parameters_for_optK_1000pts_KDEbw01_sample03DensityThresh.csv', index=False)
 
 # print('finish')
+
 #%%
 
 ### TESTING THE NEAREST NEIGHBORS
@@ -101,16 +103,36 @@ num_clusters = 0
 
 # https://www.delftstack.com/howto/python/trees-in-python/
 
-from anytree import Node, RenderTree
-
+# from anytree import Node, RenderTree
+tree = {}
 for i in range(len(distance_matrix)):
+    print(i)
+    node_list = []
     # sort distances by ascending order
     dmSort = distance_matrix[i].sort_values()
-    # get list of indices of idx point and 10 closest points
+    # get list of indices of idx point and n closest points
     idxClosePts = dmSort[0:nNeighbors].index 
     # get corresponding densities of those points
     densities = density_list.iloc[idxClosePts]
-    iNext = max(densities).index
+    node_list.append(i)
+    edges = 0
+    # while max density in subset is not equal to point i
+    while max(densities) != density_list.iloc[i]:
+        maxD = max(densities)
+        print(maxD)
+        i = list(density_list).index(maxD)
+        print(i)
+        node_list.append(i)
+        print(node_list)
+        dmSort2 = distance_matrix[i].sort_values()
+        idxClosePts2 = dmSort2[0:nNeighbors].index 
+        densities = density_list.iloc[idxClosePts2]
+        edges += 1
+        print('edges: ' + str(edges))
+
+
+    tree[i] = node_list
+    break
 
 
     # if idx point has largest density [and density > 1/10 max density], add cluster
