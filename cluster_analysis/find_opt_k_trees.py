@@ -101,6 +101,8 @@ num_clusters = 0
 
 # https://www.delftstack.com/howto/python/trees-in-python/
 
+from anytree import Node, RenderTree
+
 for i in range(len(distance_matrix)):
     # sort distances by ascending order
     dmSort = distance_matrix[i].sort_values()
