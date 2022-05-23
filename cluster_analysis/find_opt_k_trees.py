@@ -1,5 +1,5 @@
 #%% 
-from re import I
+# from re import I
 import pandas as pd
 # from itertools import combinations
 # from sklearn.metrics.pairwise import haversine_distances
@@ -24,9 +24,12 @@ df = pd.read_csv(pathIn + file1000, index_col=False)
 def haversine_dist(pt1,pt2): # theta, phi
     lat1, lng1 = pt1
     lat2, lng2 = pt2
-    # convert theta range from 0 to 2pi to -pi to pi
-    lat1 = lat1 - np.pi
-    lat2 = lat2 - np.pi
+    # convert theta range from 0 to pi to -pi/2 to pi/2 | LATITUDE (-90 to 90)
+    lat1 = lat1 - (np.pi/2)
+    lat2 = lat2 - (np.pi/2)
+    # convert phi range from 0 to 2pi to -pi to pi | LONGITUDE (-180 to 180)
+    lng1 = lng1 - np.pi
+    lng2 = lng2 - np.pi
     # calculate haversine
     lat = lat2 - lat1
     lng = lng2 - lng1
@@ -48,104 +51,190 @@ def find_optK(distance_matrix,density_list,nNeighbors):
         num_clusters = num_clusters + add_clust
     return(num_clusters)
 
-# #%%
-# # subset to user 1 week 1
+def density_tree(distance_matrix,density_list,nNeighbors):
+    tree_nodes = {}
+    tree_densities = {}
+    for i in range(len(distance_matrix)):
+        # print(i)
+        iIter = i
+        node_list = []
+        # sort distances by ascending order
+        dmSort = distance_matrix[iIter].sort_values()
+        # get list of indices of idx point and n closest points
+        idxClosePts = dmSort[0:nNeighbors].index 
+        # get corresponding densities of those points
+        densities = density_list.iloc[idxClosePts]
+        node_list.append(iIter)
+        edges = 0
+        # while max density in subset is not equal to point i
+        while max(densities) != density_list.iloc[iIter]:
+            maxD = max(densities)
+            # if no densities, return empty dictionaries
+            if np.isnan(maxD) == True:
+                # print(iIter)
+                # print(density_list.iloc[idxClosePts])
+                return(tree_nodes, tree_densities)
+            # print(maxD)
+            iIter = list(density_list).index(maxD)
+            # print(iIter)
+            node_list.append(iIter)
+            # print(node_list)
+            dmSort2 = distance_matrix[iIter].sort_values()
+            idxClosePts2 = dmSort2[0:nNeighbors].index 
+            densities = density_list.iloc[idxClosePts2]
+            edges += 1
+            # print('edges: ' + str(edges))
+
+        tree_nodes[i] = node_list
+        tree_densities[i] = list(density_list.iloc[node_list])
+    return(tree_nodes, tree_densities)
+
+#%%
+# subset to user 1 week 1
 # df = df.loc[(df['userID'] == 1) & (df['weekNumber'] == 1)]
 
-# # variable to group user's data
-# grouping = 'weekNumber'
-# # number of nearest neighbors to compare densities to
+# variable to group user's data
+grouping = 'weekNumber'
+# number of nearest neighbors to compare densities to
+n = 9
 # nPts = [20,30,40,50,60,70,80,90,100,110,120,130]
 # kList = []
-# dfByGroup = df.groupby(['userID', grouping])
-# for userGrp, grp in dfByGroup:
-#         # reset indexing
-#     grp = grp.reset_index()
-#     user = userGrp[0]
-#     print('user: ' + str(user))
-#     groupedBy = userGrp[1]
-#     print(str(grouping) + str(groupedBy))
-#     if user > 1:
-#         break
-#     for n in nPts:
-#         print('n: ' + str(n))
-#         # get distance matrix of haversine distances between points
-#         dm = pd.DataFrame(squareform(pdist(grp[['theta','phi']], metric=haversine_dist)), index=grp.index, columns=grp.index)
-#         # get number of clusters for grouping
-#         numK = find_optK(dm, grp['density'],n)
-#         kList.append((user,groupedBy,n,numK))
-#         print('clusters: ' + str(numK))
-#     print('=====')
+treeNodes = {}
+treeDensity = {}
+dfByGroup = df.groupby(['userID', grouping])
+for userGrp, grp in dfByGroup:
+    # reset indexing
+    grp = grp.reset_index()
+    user = userGrp[0]
+    print('user: ' + str(user))
+    groupedBy = userGrp[1]
+    print(str(grouping) + str(groupedBy))
+    userGrp = ';'.join([str(user),str(groupedBy)])
+    # if user < 8:
+    #     continue
+
+    # for n in nPts:
+    #     print('n: ' + str(n))
+    #     # get distance matrix of haversine distances between points
+    #     dm = pd.DataFrame(squareform(pdist(grp[['theta','phi']], metric=haversine_dist)), index=grp.index, columns=grp.index)
+    #     # get number of clusters for grouping
+    #     numK = find_optK(dm, grp['density'],n)
+    #     kList.append((user,groupedBy,n,numK))
+    #     print('clusters: ' + str(numK))
+    # print('=====')
+
+
+    # get distance matrix of haversine distances between points
+    dm = pd.DataFrame(squareform(pdist(grp[['theta','phi']], metric=haversine_dist)), index=grp.index, columns=grp.index)
+    # make tree for user/grouping group 
+    # dictionary key is 'user;grouping' pair
+    treeNodes[userGrp], treeDensity[userGrp] = density_tree(dm, grp['density'],n)
+    print('=====')
 
 # dfK = pd.DataFrame(kList, columns = ['userID', grouping, 'n_neighbors','k'])
 # dfK.to_csv(pathOut + 'test_parameters_for_optK_1000pts_KDEbw01_sample03DensityThresh.csv', index=False)
 
-# print('finish')
+# find number of clusters 
+kList = []
+for i in treeNodes: # iterate through the keys (i is key)
+    allK = []
+    for j in treeNodes[i].items(): # iterate through lists for each point j
+        allK.append(j[1][-1]) # append last point in list (index of local max density)
+    uniqueK = np.unique(np.array(allK)) # find unique indices of local max densities
+    kList.append((i,uniqueK)) # indices of local maxima for each user/group pair
+dfK = pd.DataFrame(kList, columns = ['userGroup','localMaxIndices'])
+
+dfK.to_csv(pathOut+'tree_nodes.csv', index=False)
+
+print('finish')
 
 #%%
 
 ### TESTING THE NEAREST NEIGHBORS
 
-grp2 = df.loc[(df['userID'] == 1) & (df['weekNumber'] == 4)].reset_index()
-dm2 = pd.DataFrame(squareform(pdist(grp2[['theta','phi']], metric=haversine_dist)), index=grp2.index, columns=grp2.index)
+# grp2 = df.loc[(df['userID'] == 1) & (df['weekNumber'] == 4)].reset_index()
+# dm2 = pd.DataFrame(squareform(pdist(grp2[['theta','phi']], metric=haversine_dist)), index=grp2.index, columns=grp2.index)
 
-n = 9
-nNeighbors= n 
-# numK = find_optKtree(dm, grp['density'],n)
-distance_matrix = dm2
-density_list=grp2['density']
-# densityThresh = 0.3 #max(density_list)/10
-densityThresh=0 # no threshold for now
-num_clusters = 0
-
-
-### might not be able to do for loop? or add in another wandering search? or google python code for trees?
-
-# https://www.delftstack.com/howto/python/trees-in-python/
-
-# from anytree import Node, RenderTree
-tree = {}
-for i in range(len(distance_matrix)):
-    print(i)
-    node_list = []
-    # sort distances by ascending order
-    dmSort = distance_matrix[i].sort_values()
-    # get list of indices of idx point and n closest points
-    idxClosePts = dmSort[0:nNeighbors].index 
-    # get corresponding densities of those points
-    densities = density_list.iloc[idxClosePts]
-    node_list.append(i)
-    edges = 0
-    # while max density in subset is not equal to point i
-    while max(densities) != density_list.iloc[i]:
-        maxD = max(densities)
-        print(maxD)
-        i = list(density_list).index(maxD)
-        print(i)
-        node_list.append(i)
-        print(node_list)
-        dmSort2 = distance_matrix[i].sort_values()
-        idxClosePts2 = dmSort2[0:nNeighbors].index 
-        densities = density_list.iloc[idxClosePts2]
-        edges += 1
-        print('edges: ' + str(edges))
+# n = 9
+# nNeighbors= n 
+# # numK = find_optKtree(dm, grp['density'],n)
+# distance_matrix = dm2
+# density_list=grp2['density']
+# # densityThresh = 0.3 #max(density_list)/10
+# densityThresh=0 # no threshold for now
+# num_clusters = 0
 
 
-    tree[i] = node_list
-    break
+# ### might not be able to do for loop? or add in another wandering search? or google python code for trees?
+
+# # https://www.delftstack.com/howto/python/trees-in-python/
+
+# tree_nodes = {}
+# tree_densities = {}
+# for i in range(len(distance_matrix)):
+#     print(i)
+#     iIter = i
+#     node_list = []
+#     # sort distances by ascending order
+#     dmSort = distance_matrix[iIter].sort_values()
+#     # get list of indices of idx point and n closest points
+#     idxClosePts = dmSort[0:nNeighbors].index 
+#     # get corresponding densities of those points
+#     densities = density_list.iloc[idxClosePts]
+#     node_list.append(iIter)
+#     edges = 0
+#     # while max density in subset is not equal to point i
+#     while max(densities) != density_list.iloc[iIter]:
+#         maxD = max(densities)
+#         # print(maxD)
+#         iIter = list(density_list).index(maxD)
+#         # print(iIter)
+#         node_list.append(iIter)
+#         # print(node_list)
+#         dmSort2 = distance_matrix[iIter].sort_values()
+#         idxClosePts2 = dmSort2[0:nNeighbors].index 
+#         densities = density_list.iloc[idxClosePts2]
+#         edges += 1
+#         # print('edges: ' + str(edges))
+
+#     tree_nodes[i] = node_list
+#     tree_densities[i] = list(density_list.iloc[node_list])
+#     # return(tree_nodes, tree_densities)
+
+    
 
 
-    # if idx point has largest density [and density > 1/10 max density], add cluster
-    add_clust = np.where((max(densities) == densities.iloc[0]) & (densities.iloc[0] >= densityThresh), 1, 0)
-    num_clusters = num_clusters + add_clust
+#     # if idx point has largest density [and density > 1/10 max density], add cluster
+#     # add_clust = np.where((max(densities) == densities.iloc[0]) & (densities.iloc[0] >= densityThresh), 1, 0)
+#     # num_clusters = num_clusters + add_clust
 
-
-
+# print(tree_nodes)
+# print(tree_densities)
 
 
 
 #%%
-# grp2 = df.loc[(df['userID'] == 1) & (df['weekNumber'] == 4)].reset_index()
+grp2 = df.loc[(df['userID'] == 1) & (df['weekNumber'] == 2)].reset_index()
+
+# flag colors to highlight
+grp2['color']=0
+for r in grp2.index:
+    if r in dfK.iloc[1][1]: #idxClosePts: #tree_nodes[i]: 
+        grp2['color'].iloc[r] = 1
+print(grp2.loc[grp2['color'] != 0][['phi','theta','density']])
+
+# plot
+import matplotlib.pyplot as plt
+ax = plt.axes(projection='3d')
+ax.scatter(grp2.x, grp2.y, grp2.z, c=grp2.color)
+# fig = plt.figure()
+# plt.scatter(grp2.x,grp2.y,c=grp2.color)
+# plt.show()
+
+
+
+#%%
+# grp2 = df.loc[(df['userID'] == 1) & (df['weekNumber'] == 1)].reset_index()
 # dm2 = pd.DataFrame(squareform(pdist(grp2[['theta','phi']], metric=haversine_dist)), index=grp2.index, columns=grp2.index)
 
 # i = 990
