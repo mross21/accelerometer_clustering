@@ -1,20 +1,16 @@
 #%%
 import pandas as pd
 import numpy as np
+from scipy.spatial.distance import squareform, pdist
+import math
+from numpy.linalg import norm
 import re
 import glob
-from pyarrow import parquet
-# from numpy.linalg import norm
-from scipy import spatial
-import math
 
-cluster_file = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/matrix/coords_KDE_clusters.csv'
-cluster_means_file = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/matrix/cluster_means.csv'
-phq_file = '/home/mindy/Desktop/BiAffect-iOS/UnMASCK/BiAffect_data/processed_output/PHQ/allUsers_PHQdata.csv'
-diag_file = '/home/mindy/Desktop/BiAffect-iOS/UnMASCK/BiAffect_data/processed_output/diagnosis/allUsers_diagnosisData.csv'
+
+treeFile = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/optimize_k/tree_nodes.csv'
 pathAccel = '/home/mindy/Desktop/BiAffect-iOS/UnMASCK/BiAffect_data/processed_output/accelerometer/'
 pathOut = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/accel_with_clusters/'
-
 
 numbers = re.compile(r'(\d+)')
 def numericalSort(value):
@@ -39,73 +35,61 @@ def addSpherCoords(xyz): # from spherical_kde function
     xyz['theta'] = round(np.arccos(z / np.sqrt(x**2 + y**2 + z**2)),2) 
     return(xyz)
 
-# def cosine_sim(coord, cmean):
-#     A = pd.to_numeric(np.squeeze(np.asarray(coord)))
-#     B = pd.to_numeric(np.squeeze(np.asarray(cmean)))
-#     cos = np.dot(A,B)/(norm(A)*norm(B))
-#     return(cos)
+# taken from haversine package (removed conversion to radians)
+# https://github.com/mapado/haversine/blob/main/haversine/haversine.py
+def haversine_dist(pt1,pt2): # theta, phi
+    lat1, lng1 = pt1
+    lat2, lng2 = pt2
+    # convert theta range from 0 to pi to -pi/2 to pi/2 | LATITUDE (-90 to 90)
+    lat1 = lat1 - (np.pi/2)
+    lat2 = lat2 - (np.pi/2)
+    # convert phi range from 0 to 2pi to -pi to pi | LONGITUDE (-180 to 180)
+    lng1 = lng1 - np.pi
+    lng2 = lng2 - np.pi
+    # calculate haversine
+    lat = lat2 - lat1
+    lng = lng2 - lng1
+    d = (math.sin(lat * 0.5)**2) + (math.cos(lat1) * math.cos(lat2) * (math.sin(lng * 0.5)**2))
+    return 2  * math.asin(math.sqrt(d))
 
-# def find_clust_label(coord, dfCMean, tol):
-#     # cos = 1 means vectors overlap (very similar)
-#     if (dfCMean.iloc[0]['x'] == 0) & (dfCMean.iloc[0]['y'] == 0) & (dfCMean.iloc[0]['z'] == 0):
-#         cID = 0
-#         return(cID)
-#     dfCMean['cos'] = dfCMean.apply(lambda row: cosine_sim(coord, row[['x','y','z']]), axis=1)
-#     if max(dfCMean['cos']) < tol: # if max cos < tol, then coord outside all clusters
-#         cID = 0 # no cluster found
-#     else:
-#         cID = dfCMean.loc[dfCMean['cos'] == max(dfCMean['cos'])]['clustID'].iloc[0] # ID based on max cos
-#     return(cID)
+def cosine_sim(pt1, pt2):
+    A = pt1 #pd.to_numeric(np.squeeze(np.asarray(pt1)))
+    B = pt2 #pd.to_numeric(np.squeeze(np.asarray(pt2)))
+    cos = np.dot(A,B)/(norm(A)*norm(B))
+    return(cos)
 
-def nearest_neighbour(points_a, points_b):
-    tree = spatial.cKDTree(points_b)
-    return tree.query(points_a)[1]
+# def regular_on_sphere_points(r,num):
+#     points = []
+#     #Break out if zero points
+#     if num==0:
+#         return points
+#     a = 4.0 * math.pi*(r**2.0 / num)
+#     d = math.sqrt(a)
+#     m_theta = int(round(math.pi / d))
+#     d_theta = math.pi / m_theta
+#     d_phi = a / d_theta
 
-def flatten(l):
-    return [item for sublist in l for item in sublist]
+#     for m in range(0,m_theta):
+#         theta = math.pi * (m + 0.5) / m_theta
+#         m_phi = int(round(2.0 * math.pi * math.sin(theta) / d_phi))
+#         for n in range(0,m_phi):
+#             phi = 2.0 * math.pi * n / m_phi
+#             x = r * math.sin(theta) * math.cos(phi)
+#             y = r * math.sin(theta) * math.sin(phi)
+#             z = r * math.cos(theta)
+#             points.append([x,y,z])
+#     return points
 
-def regular_on_sphere_points(r,num):
-    points = []
-    #Break out if zero points
-    if num==0:
-        return points
-    a = 4.0 * math.pi*(r**2.0 / num)
-    d = math.sqrt(a)
-    m_theta = int(round(math.pi / d))
-    d_theta = math.pi / m_theta
-    d_phi = a / d_theta
+#%%
 
-    for m in range(0,m_theta):
-        theta = math.pi * (m + 0.5) / m_theta
-        m_phi = int(round(2.0 * math.pi * math.sin(theta) / d_phi))
-        for n in range(0,m_phi):
-            phi = 2.0 * math.pi * n / m_phi
-            x = r * math.sin(theta) * math.cos(phi)
-            y = r * math.sin(theta) * math.sin(phi)
-            z = r * math.cos(theta)
-            points.append([x,y,z])
-    return points
+treeNodesCSV = pd.read_csv(treeFile, index_col=False)
+treeNodes = pd.DataFrame(treeNodesCSV, columns = ['userGroup','localMaxIndices'])
 
-
-dfClusters = pd.read_csv(cluster_file, index_col=False)
-dfMeans = pd.read_csv(cluster_means_file, index_col=False)
-dfPHQ = pd.read_csv(phq_file, index_col=False)
-dfDiag = pd.read_csv(diag_file, index_col=False)
-
-# make equidistant points on sphere to sample
-radius = 1
-num = 2500
-regular_surf_points = regular_on_sphere_points(radius,num)
-pts_xyz=np.array(regular_surf_points)
-x=pts_xyz[:,0]
-y=pts_xyz[:,1]
-z=pts_xyz[:,2]
-equi_phi = np.ndarray.round(np.mod(np.arctan2(y, x), np.pi*2),2) 
-equi_theta = np.ndarray.round(np.arccos(z / np.sqrt(x**2 + y**2 + z**2)),2) 
-equi_points = pd.DataFrame(np.stack((equi_phi, equi_theta), axis=-1), columns = ['phi','theta'])
+#%%
+# column to split user data by
+grouping = 'weekNumber'
 
 all_files = sorted(glob.glob(pathAccel + "*.parquet"), key = numericalSort)
-
 for file in all_files:
     # dfAccel = pd.read_parquet(file, engine='pyarrow')
     dfAccel = pd.read_parquet(file, engine='pyarrow')
@@ -114,48 +98,14 @@ for file in all_files:
     # convert cartesian coordinates to spherical
     addSpherCoords(dfAccel)
 
-    clust_list = []
-    dfByUser = dfAccel.groupby(['userID', 'weekNumber'])
-    for userAndWk, group in dfByUser:
-        print('user: ' + str(userAndWk[0])) # user
-        print('week: ' + str(userAndWk[1]))  # week number for that user
+    dfByUser = dfAccel.groupby(['userID', grouping])
+    for userAndGrp, group in dfByUser:
+        print('user: ' + str(userAndGrp[0])) # user
+        print('grouping: ' + str(userAndGrp[1]))  # time grouping for that user
         # if group['userID'].iloc[0] == 2:
         #     break
 
-        clustGrp = dfClusters.loc[(dfClusters['userID'] == userAndWk[0]) & (dfClusters['weekNumber'] == userAndWk[1])]
-        clustIDs = pd.merge(equi_points, clustGrp[['phi','theta','cluster']], on= ['phi','theta'], how='outer').fillna(0)
-        nn = nearest_neighbour(group[['phi','theta']],clustIDs[['phi','theta']])
-        clust_labs = clustIDs['cluster'].iloc[nn-1]
-        clust_list.append(clust_labs)
+        # locate cluster center nodes for user/group pair
+        clustCenters = treeNodes.loc[treeNodes['userGroup'] == ]
 
-
-#################
-# the kde coords list doesnt have all of the phi theta, only the ones w/ density > 0.2
-# but looks like the nearest neighbor function works
-#################
-
-
-
-        # for i in range(len(group)): # loop through coordinates in user's week
-        #     print('user: ' + str(userAndWk[0])) # user
-        #     print('week: ' + str(userAndWk[1]))  # week number for that user
-        #     print('index: ' + str(i) + '/' + str(len(group)))
-        #     print('---------')
-        #     xyz = group[['x','y','z']].iloc[i]
-        #     clustGrp = dfMeans.loc[(dfMeans['userID'] == userAndWk[0]) & (dfMeans['weekNumber'] == userAndWk[1])]
-        #     if len(clustGrp) == 0:
-        #         print('len cluster means is 0')
-        #         print('user: ' + str(userAndWk[0])) # user
-        #         print('week: ' + str(userAndWk[1]))
-        #         cID = 0
-        #         continue
-        #     cID = find_clust_label(xyz, clustGrp, 0.8) # what should the tolerance be?
-        #     clust_list.append(cID)
-
-
-    dfAccel['cluster'] = flatten(clust_list)
-    dfAccel.to_csv(pathOut + 'user_' + str(userAndWk[0]) + '_accelData_clusters.csv', index=False)
-
-
-print('finish')
 # %%
