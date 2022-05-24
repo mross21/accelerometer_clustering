@@ -6,7 +6,7 @@ import math
 from numpy.linalg import norm
 import re
 import glob
-
+from scipy import spatial
 
 treeFile = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/optimize_k/tree_nodes.csv'
 pathAccel = '/home/mindy/Desktop/BiAffect-iOS/UnMASCK/BiAffect_data/processed_output/accelerometer/'
@@ -52,40 +52,24 @@ def haversine_dist(pt1,pt2): # theta, phi
     d = (math.sin(lat * 0.5)**2) + (math.cos(lat1) * math.cos(lat2) * (math.sin(lng * 0.5)**2))
     return 2  * math.asin(math.sqrt(d))
 
-def cosine_sim(pt1, pt2):
-    A = pt1 #pd.to_numeric(np.squeeze(np.asarray(pt1)))
-    B = pt2 #pd.to_numeric(np.squeeze(np.asarray(pt2)))
+def cosine_sim(pt1, pt2): # need points in XYZ
+    A = pd.to_numeric(np.squeeze(np.asarray(pt1)))
+    B = pd.to_numeric(np.squeeze(np.asarray(pt2)))
     cos = np.dot(A,B)/(norm(A)*norm(B))
-    return(cos)
+    return(cos)   
 
-# def regular_on_sphere_points(r,num):
-#     points = []
-#     #Break out if zero points
-#     if num==0:
-#         return points
-#     a = 4.0 * math.pi*(r**2.0 / num)
-#     d = math.sqrt(a)
-#     m_theta = int(round(math.pi / d))
-#     d_theta = math.pi / m_theta
-#     d_phi = a / d_theta
+def nearest_neighbour(points_a, points_b):
+    tree = spatial.cKDTree(points_b) # indexes points to be compared
+    return tree.query(points_a)[1] # get index of closest point above to coord
 
-#     for m in range(0,m_theta):
-#         theta = math.pi * (m + 0.5) / m_theta
-#         m_phi = int(round(2.0 * math.pi * math.sin(theta) / d_phi))
-#         for n in range(0,m_phi):
-#             phi = 2.0 * math.pi * n / m_phi
-#             x = r * math.sin(theta) * math.cos(phi)
-#             y = r * math.sin(theta) * math.sin(phi)
-#             z = r * math.cos(theta)
-#             points.append([x,y,z])
-#     return points
+def flatten(l):
+    return [item for sublist in l for item in sublist]
 
 #%%
 
 treeNodesCSV = pd.read_csv(treeFile, index_col=False)
 treeNodes = pd.DataFrame(treeNodesCSV, columns = ['userGroup','localMaxIndices'])
 
-#%%
 # column to split user data by
 grouping = 'weekNumber'
 
@@ -93,19 +77,45 @@ all_files = sorted(glob.glob(pathAccel + "*.parquet"), key = numericalSort)
 for file in all_files:
     # dfAccel = pd.read_parquet(file, engine='pyarrow')
     dfAccel = pd.read_parquet(file, engine='pyarrow')
+    
+    # if dfAccel['userID'].iloc[0] < 8:
+    #     continue
+
     # filter accel points to be on unit sphere:
     accel_filter(dfAccel)
     # convert cartesian coordinates to spherical
     addSpherCoords(dfAccel)
 
+    clust_list = []
+
     dfByUser = dfAccel.groupby(['userID', grouping])
     for userAndGrp, group in dfByUser:
+        group = group.reset_index()
         print('user: ' + str(userAndGrp[0])) # user
         print('grouping: ' + str(userAndGrp[1]))  # time grouping for that user
         # if group['userID'].iloc[0] == 2:
         #     break
 
         # locate cluster center nodes for user/group pair
-        clustCenters = treeNodes.loc[treeNodes['userGroup'] == ]
+        usrGrp = ';'.join([str(float(userAndGrp[0])),str(float(userAndGrp[1]))])
+        grpClustCtrs = treeNodes.loc[treeNodes['userGroup'] == usrGrp]['localMaxIndices']
+        clustCoords = group.iloc[grpClustCtrs]
+        if len(clustCoords) == 0:
+            clust_list.append([0]*len(group))
+            continue
+        # find nearest neighbor between cluster center indices 
+        # index is cluster coordinates reindexed 0-len(clustCoords)
+        group['neighborIdx'] = nearest_neighbour(group[['theta','phi']],clustCoords[['theta','phi']])
+        # distance between coordinate and nearest cluster center
+        group['xN'] = clustCoords['x'].iloc[group['neighborIdx']].reset_index(drop=True) # get X value of cluster center closest to group['x']
+        group['yN'] = clustCoords['y'].iloc[group['neighborIdx']].reset_index(drop=True) # get Y value of cluster center closest to group['y']
+        group['zN'] = clustCoords['z'].iloc[group['neighborIdx']].reset_index(drop=True) # get Z value of cluster center closest to group['z']
+        group['cosine_similarity'] = group.apply(lambda row: cosine_sim(row[['x','y','z']], row[['xN','yN','zN']]), axis=1)
+        # if coordinate is close to cluster center (~10 nearest neighbors, 25 degrees) then label cluster by #, else 0
+        group['cluster'] = np.where(group['cosine_similarity'] >= 0.975, group['neighborIdx'], 0)
+        clust_list.append(group['cluster'])
+
+    dfAccel['cluster'] = flatten(clust_list)
+    dfAccel.to_csv(pathOut + 'user_' + str(userAndGrp[0]) + '_accelData_clusters.csv', index=False)
 
 # %%

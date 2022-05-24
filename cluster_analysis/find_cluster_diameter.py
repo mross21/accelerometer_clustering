@@ -31,7 +31,7 @@ def haversine_dist(pt1,pt2): # theta, phi
     d = (math.sin(lat * 0.5)**2) + (math.cos(lat1) * math.cos(lat2) * (math.sin(lng * 0.5)**2))
     return 2  * math.asin(math.sqrt(d))
 
-def cosine_sim(pt1, pt2):
+def cosine_sim(pt1, pt2): # need points in XYZ
     A = pt1 #pd.to_numeric(np.squeeze(np.asarray(pt1)))
     B = pt2 #pd.to_numeric(np.squeeze(np.asarray(pt2)))
     cos = np.dot(A,B)/(norm(A)*norm(B))
@@ -42,7 +42,7 @@ grp = df.loc[(df['userID'] == 6) & (df['weekNumber'] == 2)].reset_index()
 
 dm = pd.DataFrame(squareform(pdist(grp[['theta','phi']], metric=haversine_dist)), index=grp.index, columns=grp.index)
 
-idx=600
+idx=500
 distance_matrix=dm
 nNeighbors = 10
 

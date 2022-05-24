@@ -142,7 +142,9 @@ for i in treeNodes: # iterate through the keys (i is key)
         allK.append(j[1][-1]) # append last point in list (index of local max density)
     uniqueK = np.unique(np.array(allK)) # find unique indices of local max densities
     kList.append((i,uniqueK)) # indices of local maxima for each user/group pair
-dfK = pd.DataFrame(kList, columns = ['userGroup','localMaxIndices'])
+
+dictK = dict(kList)
+dfK = pd.DataFrame([(k, y) for k, v in dictK.items() for y in v], columns = ['userGroup','localMaxIndices'])
 
 dfK.to_csv(pathOut+'tree_nodes.csv', index=False)
 
