@@ -60,7 +60,7 @@ def cosine_sim(pt1, pt2): # need points in XYZ
 
 def nearest_neighbour(points_a, points_b):
     tree = spatial.cKDTree(points_b) # indexes points to be compared
-    return tree.query(points_a)[1] # get index of closest point above to coord
+    return tree.query(points_a)[1] # get index of closest point above to coordinate
 
 def flatten(l):
     return [item for sublist in l for item in sublist]
@@ -68,7 +68,7 @@ def flatten(l):
 #%%
 
 treeNodesCSV = pd.read_csv(treeFile, index_col=False)
-treeNodes = pd.DataFrame(treeNodesCSV, columns = ['userGroup','localMaxIndices'])
+treeNodes = pd.DataFrame(treeNodesCSV)
 
 # column to split user data by
 grouping = 'weekNumber'
@@ -96,23 +96,23 @@ for file in all_files:
         # if group['userID'].iloc[0] == 2:
         #     break
 
-        # locate cluster center nodes for user/group pair
+        # locate cluster center coordinates for user/group pair
         usrGrp = ';'.join([str(float(userAndGrp[0])),str(float(userAndGrp[1]))])
-        grpClustCtrs = treeNodes.loc[treeNodes['userGroup'] == usrGrp]['localMaxIndices']
-        clustCoords = group.iloc[grpClustCtrs]
-        if len(clustCoords) == 0:
-            clust_list.append([0]*len(group))
+        grpClustCtrs = treeNodes.loc[treeNodes['userGroup'] == usrGrp]
+        if len(grpClustCtrs) == 0:
+            clust_list.append(float('NaN')*len(group))
             continue
-        # find nearest neighbor between cluster center indices 
-        # index is cluster coordinates reindexed 0-len(clustCoords)
-        group['neighborIdx'] = nearest_neighbour(group[['theta','phi']],clustCoords[['theta','phi']])
-        # distance between coordinate and nearest cluster center
-        group['xN'] = clustCoords['x'].iloc[group['neighborIdx']].reset_index(drop=True) # get X value of cluster center closest to group['x']
-        group['yN'] = clustCoords['y'].iloc[group['neighborIdx']].reset_index(drop=True) # get Y value of cluster center closest to group['y']
-        group['zN'] = clustCoords['z'].iloc[group['neighborIdx']].reset_index(drop=True) # get Z value of cluster center closest to group['z']
+        # find nearest cluster center to coordinate
+        # index is cluster coordinates reindexed 0-len(grpClustCtrs)
+        neighborIdx = nearest_neighbour(group[['theta','phi']],grpClustCtrs[['theta','phi']])
+        # calculate cosine similarity between coordinate and nearest cluster center
+        group['xN'] = grpClustCtrs['x'].iloc[neighborIdx].reset_index(drop=True) # get X value of cluster center closest to group['x']
+        group['yN'] = grpClustCtrs['y'].iloc[neighborIdx].reset_index(drop=True) # get Y value of cluster center closest to group['y']
+        group['zN'] = grpClustCtrs['z'].iloc[neighborIdx].reset_index(drop=True) # get Z value of cluster center closest to group['z']
         group['cosine_similarity'] = group.apply(lambda row: cosine_sim(row[['x','y','z']], row[['xN','yN','zN']]), axis=1)
         # if coordinate is close to cluster center (~10 nearest neighbors, 25 degrees) then label cluster by #, else 0
-        group['cluster'] = np.where(group['cosine_similarity'] >= 0.975, group['neighborIdx'], 0)
+        # 0 means no cluster
+        group['cluster'] = np.where(group['cosine_similarity'] >= 0.975, neighborIdx+1, 0)
         clust_list.append(group['cluster'])
 
     dfAccel['cluster'] = flatten(clust_list)
