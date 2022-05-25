@@ -8,7 +8,7 @@ import re
 import glob
 from scipy import spatial
 
-treeFile = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/optimize_k/tree_nodes.csv'
+treeFile = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/optimize_k/tree_nodes_v2.csv'
 pathAccel = '/home/mindy/Desktop/BiAffect-iOS/UnMASCK/BiAffect_data/processed_output/accelerometer/'
 pathOut = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/accel_with_clusters/'
 
@@ -100,7 +100,7 @@ for file in all_files:
         usrGrp = ';'.join([str(float(userAndGrp[0])),str(float(userAndGrp[1]))])
         grpClustCtrs = treeNodes.loc[treeNodes['userGroup'] == usrGrp]
         if len(grpClustCtrs) == 0:
-            clust_list.append(float('NaN')*len(group))
+            clust_list.append([0]*len(group))
             continue
         # find nearest cluster center to coordinate
         # index is cluster coordinates reindexed 0-len(grpClustCtrs)

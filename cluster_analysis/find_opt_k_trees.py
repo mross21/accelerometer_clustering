@@ -12,7 +12,7 @@ from math import cos, sin, asin, sqrt
 pathIn = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/matrix/kde_sampled_points/'
 pathOut = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/optimize_k/'
 # file2500 = 'coords_with_KDEdensities-2500pts.csv'
-file1000 = 'coords_with_KDEdensities-1000pts.csv'
+file1000 = 'coords_with_KDEdensities_bw01-1000pts.csv'
 # file500 = 'coords_with_KDEdensities-500pts.csv'
 # file1000_v2 = 'coords_with_KDEdensities_bw02-1000pts.csv'
 # file1000_v3 = 'coords_with_KDEdensities_bw015-1000pts.csv'
@@ -142,7 +142,7 @@ for i in treeNodes: # iterate through the keys (i is key)
         allK.append(j[1][-1]) # append last point in list (index of local max density)
     uniqueK = np.unique(np.array(allK)) # find unique indices of local max densities
     kList.append((i,uniqueK)) # indices of local maxima for each user/group pair
-#%%
+
 dictK = dict(kList)
 dfK = pd.DataFrame([(k, y) for k, v in dictK.items() for y in v], columns = ['userGroup','localMaxIndex'])
 dfK['x'] = grp['x'].iloc[dfK['localMaxIndex']].reset_index(drop=True)
@@ -151,7 +151,7 @@ dfK['z'] = grp['z'].iloc[dfK['localMaxIndex']].reset_index(drop=True)
 dfK['theta'] = grp['theta'].iloc[dfK['localMaxIndex']].reset_index(drop=True)
 dfK['phi'] = grp['phi'].iloc[dfK['localMaxIndex']].reset_index(drop=True)
 
-dfK.to_csv(pathOut+'tree_nodes.csv', index=False)
+dfK.to_csv(pathOut+'tree_nodes_v2.csv', index=False)
 
 print('finish')
 
@@ -226,7 +226,7 @@ grp2 = df.loc[(df['userID'] == 1) & (df['weekNumber'] == 2)].reset_index()
 # flag colors to highlight
 grp2['color']=0
 for r in grp2.index:
-    if r in dfK.iloc[1][1]: #idxClosePts: #tree_nodes[i]: 
+    if r in dfK: #idxClosePts: #tree_nodes[i]: 
         grp2['color'].iloc[r] = 1
 print(grp2.loc[grp2['color'] != 0][['phi','theta','density']])
 
