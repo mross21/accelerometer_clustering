@@ -27,7 +27,7 @@ def accel_filter(xyz):
     y = pd.to_numeric(xyz['y'])
     z = pd.to_numeric(xyz['z'])
     xyz['r'] = np.sqrt(x**2 + y**2 + z**2)
-    dfOut = xyz.loc[(xyz['r'] >= 0.9) & (xyz['r'] <= 1.1)]
+    dfOut = xyz.loc[(xyz['r'] >= 0.95) & (xyz['r'] <= 1.05)]
     return(dfOut)
 
 def addSpherCoords(xyz): # from spherical_kde function

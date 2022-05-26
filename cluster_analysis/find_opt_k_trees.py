@@ -68,6 +68,7 @@ def density_tree(distance_matrix,density_list,nNeighbors):
         edges = 0
         # while max density in subset is not equal to point i
         while max(densities) != density_list.iloc[iIter]:
+            # get max density of point and neighbors
             maxD = max(densities)
             # if no densities, return empty dictionaries
             if np.isnan(maxD) == True:
@@ -75,19 +76,28 @@ def density_tree(distance_matrix,density_list,nNeighbors):
                 # print(density_list.iloc[idxClosePts])
                 return(tree_nodes, tree_densities)
             # print(maxD)
+            # change index to that of max density
             iIter = list(density_list).index(maxD)
             # print(iIter)
+            # append index of node with highest density
             node_list.append(iIter)
             # print(node_list)
+            # sort density values of row iIter
             dmSort2 = distance_matrix[iIter].sort_values()
+            # find neighbors to point iIter
             idxClosePts2 = dmSort2[0:nNeighbors].index 
+            # find densities of neighbors to point iIter
             densities = density_list.iloc[idxClosePts2]
+            # add edge
             edges += 1
             # print('edges: ' + str(edges))
 
         tree_nodes[i] = node_list
         tree_densities[i] = list(density_list.iloc[node_list])
     return(tree_nodes, tree_densities)
+
+def flatten(l):
+    return [item for sublist in l for item in sublist]
 
 #%%
 # subset to user 1 week 1
@@ -110,8 +120,8 @@ for userGrp, grp in dfByGroup:
     groupedBy = userGrp[1]
     print(str(grouping) + str(groupedBy))
     userGrp = ';'.join([str(user),str(groupedBy)])
-    # if user < 8:
-    #     continue
+    # if user > 4:
+    #     break
 
     # for n in nPts:
     #     print('n: ' + str(n))
@@ -123,7 +133,6 @@ for userGrp, grp in dfByGroup:
     #     print('clusters: ' + str(numK))
     # print('=====')
 
-
     # get distance matrix of haversine distances between points
     dm = pd.DataFrame(squareform(pdist(grp[['theta','phi']], metric=haversine_dist)), index=grp.index, columns=grp.index)
     # make tree for user/grouping group 
@@ -134,7 +143,7 @@ for userGrp, grp in dfByGroup:
 # dfK = pd.DataFrame(kList, columns = ['userID', grouping, 'n_neighbors','k'])
 # dfK.to_csv(pathOut + 'test_parameters_for_optK_1000pts_KDEbw01_sample03DensityThresh.csv', index=False)
 
-# find number of clusters 
+# find number of clusters (get local max indices only)
 kList = []
 for i in treeNodes: # iterate through the keys (i is key)
     allK = []
@@ -143,15 +152,41 @@ for i in treeNodes: # iterate through the keys (i is key)
     uniqueK = np.unique(np.array(allK)) # find unique indices of local max densities
     kList.append((i,uniqueK)) # indices of local maxima for each user/group pair
 
+# make dataframe of local maximums for each user/group pairing
 dictK = dict(kList)
 dfK = pd.DataFrame([(k, y) for k, v in dictK.items() for y in v], columns = ['userGroup','localMaxIndex'])
-dfK['x'] = grp['x'].iloc[dfK['localMaxIndex']].reset_index(drop=True)
-dfK['y'] = grp['y'].iloc[dfK['localMaxIndex']].reset_index(drop=True)
-dfK['z'] = grp['z'].iloc[dfK['localMaxIndex']].reset_index(drop=True)
-dfK['theta'] = grp['theta'].iloc[dfK['localMaxIndex']].reset_index(drop=True)
-dfK['phi'] = grp['phi'].iloc[dfK['localMaxIndex']].reset_index(drop=True)
+xList = []
+yList = []
+zList = []
+thetaList = []
+phiList = []
+densityList = []
+# create column to match user/group pairing
+df['userGroup'] = df[['userID','weekNumber']].astype(str).agg(';'.join, axis=1)
+# loop through the user/group pairs
+for usrGrp in dfK['userGroup'].unique():
+    # select rows for user/group pair
+    grp2 = df.loc[df['userGroup'] == usrGrp].reset_index(drop=True)
+    grpK = dfK.loc[dfK['userGroup'] == usrGrp].reset_index(drop=True)
+    # get values
+    xList.append(grp2['x'].iloc[grpK['localMaxIndex']].reset_index(drop=True))
+    yList.append(grp2['y'].iloc[grpK['localMaxIndex']].reset_index(drop=True))
+    zList.append(grp2['z'].iloc[grpK['localMaxIndex']].reset_index(drop=True))
+    thetaList.append(grp2['theta'].iloc[grpK['localMaxIndex']].reset_index(drop=True))
+    phiList.append(grp2['phi'].iloc[grpK['localMaxIndex']].reset_index(drop=True))
+    densityList.append(grp2['density'].iloc[grpK['localMaxIndex']].reset_index(drop=True))
 
-dfK.to_csv(pathOut+'tree_nodes_v2.csv', index=False)
+dfK['x'] = flatten(xList)
+dfK['y'] = flatten(yList)
+dfK['z'] = flatten(zList)
+dfK['theta'] = flatten(thetaList)
+dfK['phi'] = flatten(phiList)
+dfK['density'] = flatten(densityList)
+
+# filter out peaks below density 0.2
+dfKOut = dfK.loc[dfK['density'] >= 0.2]
+# csv file of local max densities
+dfKOut.to_csv(pathOut+'tree_nodes_v4.csv', index=False)
 
 print('finish')
 
@@ -221,12 +256,15 @@ print('finish')
 
 
 #%%
-grp2 = df.loc[(df['userID'] == 1) & (df['weekNumber'] == 2)].reset_index()
+grp2 = df.loc[(df['userID'] == 1) & (df['weekNumber'] == 4)].reset_index()
+usrGrp = ';'.join([str(1.0),str(4.0)])
+dfK2 = dfKOut.loc[dfKOut['userGroup'] == usrGrp].reset_index()
 
 # flag colors to highlight
 grp2['color']=0
 for r in grp2.index:
-    if r in dfK: #idxClosePts: #tree_nodes[i]: 
+    if r in list(dfK2['localMaxIndex']): #idxClosePts: #tree_nodes[i]: 
+        print(r)
         grp2['color'].iloc[r] = 1
 print(grp2.loc[grp2['color'] != 0][['phi','theta','density']])
 
@@ -235,7 +273,7 @@ import matplotlib.pyplot as plt
 ax = plt.axes(projection='3d')
 ax.scatter(grp2.x, grp2.y, grp2.z, c=grp2.color)
 # fig = plt.figure()
-# plt.scatter(grp2.x,grp2.y,c=grp2.color)
+# plt.scatter(grp2.y,grp2.z,c=grp2.color)
 # plt.show()
 
 

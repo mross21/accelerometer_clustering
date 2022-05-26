@@ -8,7 +8,7 @@ import re
 import glob
 from scipy import spatial
 
-treeFile = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/optimize_k/tree_nodes_v2.csv'
+treeFile = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/optimize_k/tree_nodes_v4.csv'
 pathAccel = '/home/mindy/Desktop/BiAffect-iOS/UnMASCK/BiAffect_data/processed_output/accelerometer/'
 pathOut = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/accel_with_clusters/'
 
@@ -23,7 +23,7 @@ def accel_filter(xyz):
     y = pd.to_numeric(xyz['y'])
     z = pd.to_numeric(xyz['z'])
     xyz['r'] = np.sqrt(x**2 + y**2 + z**2)
-    dfOut = xyz.loc[(xyz['r'] >= 0.9) & (xyz['r'] <= 1.1)]
+    dfOut = xyz.loc[(xyz['r'] >= 0.95) & (xyz['r'] <= 1.05)]
     return(dfOut)
 
 def addSpherCoords(xyz): # from spherical_kde function
@@ -66,7 +66,6 @@ def flatten(l):
     return [item for sublist in l for item in sublist]
 
 #%%
-
 treeNodesCSV = pd.read_csv(treeFile, index_col=False)
 treeNodes = pd.DataFrame(treeNodesCSV)
 
