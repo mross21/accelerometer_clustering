@@ -76,45 +76,55 @@ all_files = sorted(glob.glob(pathAccel + "*.parquet"), key = numericalSort)
 for file in all_files:
     # dfAccel = pd.read_parquet(file, engine='pyarrow')
     dfAccel = pd.read_parquet(file, engine='pyarrow')
+
+    if dfAccel['userID'].iloc[0] == 4:
+        break
     
     # if dfAccel['userID'].iloc[0] < 8:
     #     continue
-
+    print(len(dfAccel))
     # filter accel points to be on unit sphere:
-    accel_filter(dfAccel)
+    df = accel_filter(dfAccel)
+    print(len(df))
+
     # convert cartesian coordinates to spherical
-    addSpherCoords(dfAccel)
+    addSpherCoords(df)
 
-    clust_list = []
-
-    dfByUser = dfAccel.groupby(['userID', grouping])
+    # clust_list = []
+    dfOut = []
+    dfByUser = df.groupby(['userID', grouping])
     for userAndGrp, group in dfByUser:
         group = group.reset_index()
         print('user: ' + str(userAndGrp[0])) # user
         print('grouping: ' + str(userAndGrp[1]))  # time grouping for that user
-        # if group['userID'].iloc[0] == 2:
-        #     break
 
         # locate cluster center coordinates for user/group pair
         usrGrp = ';'.join([str(float(userAndGrp[0])),str(float(userAndGrp[1]))])
         grpClustCtrs = treeNodes.loc[treeNodes['userGroup'] == usrGrp]
         if len(grpClustCtrs) == 0:
-            clust_list.append([0]*len(group))
+            # clust_list.append([0]*len(group))
+            group['cluster'] = [0]*len(group)
             continue
         # find nearest cluster center to coordinate
         # index is cluster coordinates reindexed 0-len(grpClustCtrs)
-        neighborIdx = nearest_neighbour(group[['theta','phi']],grpClustCtrs[['theta','phi']])
+        group['neighborIdx'] = nearest_neighbour(group[['x','y','z']],grpClustCtrs[['x','y','z']])
+
         # calculate cosine similarity between coordinate and nearest cluster center
-        group['xN'] = grpClustCtrs['x'].iloc[neighborIdx].reset_index(drop=True) # get X value of cluster center closest to group['x']
-        group['yN'] = grpClustCtrs['y'].iloc[neighborIdx].reset_index(drop=True) # get Y value of cluster center closest to group['y']
-        group['zN'] = grpClustCtrs['z'].iloc[neighborIdx].reset_index(drop=True) # get Z value of cluster center closest to group['z']
+        group['xN'] = grpClustCtrs['x'].iloc[group['neighborIdx']].reset_index(drop=True) # get X value of cluster center closest to group['x']
+        group['yN'] = grpClustCtrs['y'].iloc[group['neighborIdx']].reset_index(drop=True) # get Y value of cluster center closest to group['y']
+        group['zN'] = grpClustCtrs['z'].iloc[group['neighborIdx']].reset_index(drop=True) # get Z value of cluster center closest to group['z']
         group['cosine_similarity'] = group.apply(lambda row: cosine_sim(row[['x','y','z']], row[['xN','yN','zN']]), axis=1)
+        
         # if coordinate is close to cluster center (~10 nearest neighbors, 25 degrees) then label cluster by #, else 0
         # 0 means no cluster
-        group['cluster'] = np.where(group['cosine_similarity'] >= 0.975, neighborIdx+1, 0)
-        clust_list.append(group['cluster'])
+        group['cluster'] = np.where(group['cosine_similarity'] >= 0.975, group['neighborIdx']+1, 0)
+        # clust_list.append(group['cluster'])
+        dfOut.append(group)
+    dfOut = pd.concat(dfOut,axis=0,ignore_index=True)
 
-    dfAccel['cluster'] = flatten(clust_list)
-    dfAccel.to_csv(pathOut + 'user_' + str(userAndGrp[0]) + '_accelData_clusters.csv', index=False)
+    # df.to_csv(pathOut + 'user_' + str(userAndGrp[0]) + '_accelData_clusters.csv', index=False)
+    dfOut.to_csv(pathOut + 'user_' + str(userAndGrp[0]) + '_accelData_clusters.csv', index=False)
 
+# %%
+group[['index','healthCode','recordId','weekNumber','x','y','z','xN','yN','zN','neighborIdx','cosine_similarity','cluster']].to_csv('/home/mindy/Desktop/test.csv', index=False)
 # %%

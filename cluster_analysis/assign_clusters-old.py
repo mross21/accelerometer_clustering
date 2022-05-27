@@ -110,7 +110,7 @@ for file in all_files:
     # dfAccel = pd.read_parquet(file, engine='pyarrow')
     dfAccel = pd.read_parquet(file, engine='pyarrow')
     # filter accel points to be on unit sphere:
-    accel_filter(dfAccel)
+    dfAccel = accel_filter(dfAccel)
     # convert cartesian coordinates to spherical
     addSpherCoords(dfAccel)
 

@@ -1,21 +1,12 @@
 #%% 
-# from re import I
 import pandas as pd
-# from itertools import combinations
-# from sklearn.metrics.pairwise import haversine_distances
 import numpy as np
 from scipy.spatial.distance import squareform, pdist
-# from haversine import haversine
 from math import cos, sin, asin, sqrt
-
 
 pathIn = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/matrix/kde_sampled_points/'
 pathOut = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/optimize_k/'
-# file2500 = 'coords_with_KDEdensities-2500pts.csv'
 file1000 = 'coords_with_KDEdensities_bw01-1000pts.csv'
-# file500 = 'coords_with_KDEdensities-500pts.csv'
-# file1000_v2 = 'coords_with_KDEdensities_bw02-1000pts.csv'
-# file1000_v3 = 'coords_with_KDEdensities_bw015-1000pts.csv'
 
 df = pd.read_csv(pathIn + file1000, index_col=False)
 
@@ -99,16 +90,11 @@ def density_tree(distance_matrix,density_list,nNeighbors):
 def flatten(l):
     return [item for sublist in l for item in sublist]
 
-#%%
-# subset to user 1 week 1
-# df = df.loc[(df['userID'] == 1) & (df['weekNumber'] == 1)]
-
+###############################################################################
 # variable to group user's data
 grouping = 'weekNumber'
 # number of nearest neighbors to compare densities to
 n = 9
-# nPts = [20,30,40,50,60,70,80,90,100,110,120,130]
-# kList = []
 treeNodes = {}
 treeDensity = {}
 dfByGroup = df.groupby(['userID', grouping])
@@ -120,18 +106,9 @@ for userGrp, grp in dfByGroup:
     groupedBy = userGrp[1]
     print(str(grouping) + str(groupedBy))
     userGrp = ';'.join([str(user),str(groupedBy)])
+
     # if user > 4:
     #     break
-
-    # for n in nPts:
-    #     print('n: ' + str(n))
-    #     # get distance matrix of haversine distances between points
-    #     dm = pd.DataFrame(squareform(pdist(grp[['theta','phi']], metric=haversine_dist)), index=grp.index, columns=grp.index)
-    #     # get number of clusters for grouping
-    #     numK = find_optK(dm, grp['density'],n)
-    #     kList.append((user,groupedBy,n,numK))
-    #     print('clusters: ' + str(numK))
-    # print('=====')
 
     # get distance matrix of haversine distances between points
     dm = pd.DataFrame(squareform(pdist(grp[['theta','phi']], metric=haversine_dist)), index=grp.index, columns=grp.index)
@@ -139,9 +116,6 @@ for userGrp, grp in dfByGroup:
     # dictionary key is 'user;grouping' pair
     treeNodes[userGrp], treeDensity[userGrp] = density_tree(dm, grp['density'],n)
     print('=====')
-
-# dfK = pd.DataFrame(kList, columns = ['userID', grouping, 'n_neighbors','k'])
-# dfK.to_csv(pathOut + 'test_parameters_for_optK_1000pts_KDEbw01_sample03DensityThresh.csv', index=False)
 
 # find number of clusters (get local max indices only)
 kList = []
@@ -189,6 +163,36 @@ dfKOut = dfK.loc[dfK['density'] >= 0.2]
 dfKOut.to_csv(pathOut+'tree_nodes_v4.csv', index=False)
 
 print('finish')
+
+
+
+
+
+#%%
+################## 
+## TO PLOT
+
+
+grp2 = df.loc[(df['userID'] == 1) & (df['weekNumber'] == 4)].reset_index()
+usrGrp = ';'.join([str(1.0),str(4.0)])
+dfK2 = dfKOut.loc[dfKOut['userGroup'] == usrGrp].reset_index()
+
+# flag colors to highlight
+grp2['color']=0
+for r in grp2.index:
+    if r in list(dfK2['localMaxIndex']): #idxClosePts: #tree_nodes[i]: 
+        print(r)
+        grp2['color'].iloc[r] = 1
+print(grp2.loc[grp2['color'] != 0][['phi','theta','density']])
+
+# plot
+import matplotlib.pyplot as plt
+ax = plt.axes(projection='3d')
+ax.scatter(grp2.x, grp2.y, grp2.z, c=grp2.color)
+# fig = plt.figure()
+# plt.scatter(grp2.y,grp2.z,c=grp2.color)
+# plt.show()
+
 
 #%%
 
@@ -252,31 +256,6 @@ print('finish')
 
 # print(tree_nodes)
 # print(tree_densities)
-
-
-
-#%%
-grp2 = df.loc[(df['userID'] == 1) & (df['weekNumber'] == 4)].reset_index()
-usrGrp = ';'.join([str(1.0),str(4.0)])
-dfK2 = dfKOut.loc[dfKOut['userGroup'] == usrGrp].reset_index()
-
-# flag colors to highlight
-grp2['color']=0
-for r in grp2.index:
-    if r in list(dfK2['localMaxIndex']): #idxClosePts: #tree_nodes[i]: 
-        print(r)
-        grp2['color'].iloc[r] = 1
-print(grp2.loc[grp2['color'] != 0][['phi','theta','density']])
-
-# plot
-import matplotlib.pyplot as plt
-ax = plt.axes(projection='3d')
-ax.scatter(grp2.x, grp2.y, grp2.z, c=grp2.color)
-# fig = plt.figure()
-# plt.scatter(grp2.y,grp2.z,c=grp2.color)
-# plt.show()
-
-
 
 #%%
 # grp2 = df.loc[(df['userID'] == 1) & (df['weekNumber'] == 1)].reset_index()
