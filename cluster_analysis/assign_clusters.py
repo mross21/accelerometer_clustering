@@ -77,15 +77,14 @@ for file in all_files:
     # dfAccel = pd.read_parquet(file, engine='pyarrow')
     dfAccel = pd.read_parquet(file, engine='pyarrow')
 
-    if dfAccel['userID'].iloc[0] == 4:
-        break
+    if dfAccel['userID'].iloc[0] < 40:
+        continue
     
     # if dfAccel['userID'].iloc[0] < 8:
     #     continue
-    print(len(dfAccel))
+
     # filter accel points to be on unit sphere:
     df = accel_filter(dfAccel)
-    print(len(df))
 
     # convert cartesian coordinates to spherical
     addSpherCoords(df)
@@ -124,6 +123,8 @@ for file in all_files:
 
     # df.to_csv(pathOut + 'user_' + str(userAndGrp[0]) + '_accelData_clusters.csv', index=False)
     dfOut.to_csv(pathOut + 'user_' + str(userAndGrp[0]) + '_accelData_clusters.csv', index=False)
+
+print('finish')
 
 # %%
 group[['index','healthCode','recordId','weekNumber','x','y','z','xN','yN','zN','neighborIdx','cosine_similarity','cluster']].to_csv('/home/mindy/Desktop/test.csv', index=False)
