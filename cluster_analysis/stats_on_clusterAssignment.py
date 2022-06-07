@@ -14,7 +14,7 @@ def numericalSort(value):
     return(parts)
 
 # determine how much of data belongs to cluster per user
-all_files = sorted(glob.glob(pathIn + "*.csv"), key = numericalSort)
+all_files = sorted(glob.glob(pathIn + "*_v2.csv"), key = numericalSort)
 stats = []
 for file in all_files:
         df = pd.read_csv(file, index_col=False)
@@ -29,15 +29,12 @@ dfStats = pd.DataFrame(stats, columns = ['userID', 'fraction_labeled'])
 #%%
 
 frac_mean = np.mean(dfStats['fraction_labeled'])
-# 0.677184
 frac_median = np.median(dfStats['fraction_labeled'])
-# 0.67089
 frac_min = min(dfStats['fraction_labeled'])
-# 0.4807525
 frac_max = max(dfStats['fraction_labeled'])
-#0.83472023
+usersLow = dfStats.loc[dfStats['fraction_labeled'] < 0.85]
 
 #%%
-dfStats.to_csv(pathOut + 'labeled_data_stats.csv', index=False)
+dfStats.to_csv(pathOut + 'labeled_data_stats_v2.csv', index=False)
 
 # %%
