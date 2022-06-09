@@ -44,7 +44,7 @@ def find_optK(distance_matrix,density_list,nNeighbors):
 
 def density_tree(distance_matrix,density_list,nNeighbors):
     tree_nodes = {}
-    tree_densities = {}
+    # tree_densities = {}
     for i in range(len(distance_matrix)):
         # print(i)
         iIter = i
@@ -65,7 +65,7 @@ def density_tree(distance_matrix,density_list,nNeighbors):
             if np.isnan(maxD) == True:
                 # print(iIter)
                 # print(density_list.iloc[idxClosePts])
-                return(tree_nodes, tree_densities)
+                return(tree_nodes) #, tree_densities)
             # print(maxD)
             # change index to that of max density
             iIter = list(density_list).index(maxD)
@@ -83,9 +83,11 @@ def density_tree(distance_matrix,density_list,nNeighbors):
             edges += 1
             # print('edges: ' + str(edges))
 
-        tree_nodes[i] = node_list
-        tree_densities[i] = list(density_list.iloc[node_list])
-    return(tree_nodes, tree_densities)
+        # tree_nodes[i] = node_list
+        # tree_densities[i] = list(density_list.iloc[node_list])
+        tree_nodes.update({i:{'nodes': node_list, 'densities': list(density_list.iloc[node_list])}})
+    # return(tree_nodes, tree_densities)
+    return(tree_nodes)
 
 def flatten(l):
     return [item for sublist in l for item in sublist]
@@ -114,19 +116,25 @@ for userGrp, grp in dfByGroup:
     dm = pd.DataFrame(squareform(pdist(grp[['theta','phi']], metric=haversine_dist)), index=grp.index, columns=grp.index)
     # make tree for user/grouping group 
     # dictionary key is 'user;grouping' pair
-    treeNodes[userGrp], treeDensity[userGrp] = density_tree(dm, grp['density'],n)
+    # treeNodes[userGrp], treeDensity[userGrp] = density_tree(dm, grp['density'],n)
+    treeNodes[userGrp] = density_tree(dm, grp['density'],n)
+
     print('=====')
+# #%%
+# import json
+# with open(pathOut+'treeNodes.json', 'w') as convert_file:
+#      convert_file.write(json.dumps(treeNodes))
+
 #%%
 # find number of clusters (get local max indices only)
 kList = []
 for i in treeNodes: # iterate through the keys (i is key)
     allK = []
-    print(i)
     for j in treeNodes[i].items(): # iterate through lists for each point j
-        print(j)
-        allK.append(j[1][-1]) # append last point in list (index of local max density)
-    uniqueK = np.unique(np.array(allK)) # find unique indices of local max densities
+        allK.append(j[1]['nodes'][-1]) # append last point in list (index of local max density)
+    uniqueK = np.unique(np.array(allK)) # find unique indices of local max densitiesd
     kList.append((i,uniqueK)) # indices of local maxima for each user/group pair
+# dfK = pd.DataFrame(kList, columns = ['i','node'])
 #%%
 # make dataframe of local maximums for each user/group pairing
 dictK = dict(kList)
@@ -159,10 +167,34 @@ dfK['theta'] = flatten(thetaList)
 dfK['phi'] = flatten(phiList)
 dfK['density'] = flatten(densityList)
 
+#%%
 # filter out peaks below density 0.2
-dfKOut = dfK.loc[dfK['density'] >= 0.2]
-# csv file of local max densities
-dfKOut.to_csv(pathOut+'tree_nodes_v4.csv', index=False)
+dfHigh = dfK.loc[dfK['density'] >= 0.2]
+dfLow = dfK.loc[dfK['density'] < 0.2]
+
+
+###
+# these only have the indices for the peaks, not the points to get there
+# need to find original points? filter the original dictionary?
+
+
+
+
+
+
+
+
+
+
+#%%
+# loop through the user/group pairs
+for usrGrp in dfK['userGroup'].unique():
+    # select rows for user/group pair
+    grp2 = df.loc[df['userGroup'] == usrGrp].reset_index(drop=True)
+    grpK = dfK.loc[dfK['userGroup'] == usrGrp].reset_index(drop=True)
+
+
+
 
 print('finish')
 
