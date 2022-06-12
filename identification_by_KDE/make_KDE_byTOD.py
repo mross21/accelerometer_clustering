@@ -62,11 +62,27 @@ def regular_on_sphere_points(r,num):
             points.append([x,y,z])
     return points
 
+# # label morning, afternoon, evening, night for each timestamp
+# def timeOfDay(dataframe): 
+# #    ts = pd.to_datetime(dataframe['sessionTimestampLocal'])
+#     l = []
+#     for t in dataframe['sessionTimestampLocal']:
+#         if (t.hour >= 6) & (t.hour < 12):
+#             l.append('morning')
+#         elif (t.hour >=12) & (t.hour < 18):
+#             l.append('afternoon')
+#         elif (t.hour >= 18):
+#             l.append('evening')
+#         elif (t.hour < 6):
+#             l.append('night')
+#         else:
+#             l.append('')
+#     dataframe['timeOfDay'] = pd.DataFrame(l)
+#     return(dataframe)
+
 #######################################################################################################
 
 pathAccel = '/home/mindy/Desktop/BiAffect-iOS/UnMASCK/BiAffect_data/processed_output/accelerometer/'
-plotPath = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/plots/userAndWeek/'
-pathOut = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/matrix/kde_sampled_points/'
 
 all_files = sorted(glob.glob(pathAccel + "*.parquet"), key = numericalSort)
 sKDEList = []
@@ -92,12 +108,20 @@ for file in all_files:
     df = accel_filter(dfAccel)
     # convert cartesian coordinates to spherical
     addSpherCoords(df)
+    # # add time of day
+    # timeOfDay(df)
+
+    # print('user: ' + str(df['userID'].iloc[0]))
+    # if df['userID'].iloc[0] < 19:
+    #     continue
+
 
     # create KDE per user and day
-    dfByUser = df.groupby(['userID', 'weekNumber'])
-    for userAndWk, group in dfByUser:
-        print('user: ' + str(userAndWk[0])) # user
-        print('week: ' + str(userAndWk[1]))  # week number for that user
+    dfByUser = df.groupby(['userID', 'weekNumber', 'timeOfDay'])
+    for filters, group in dfByUser:
+        print('user: ' + str(filters[0])) # user
+        print('week: ' + str(filters[1]))  # week number for that user
+        print('timeOfDay: ' + str(filters[2]))
         
         # if group size too large, remove every 4th row
         while len(group) > 250000:
@@ -111,22 +135,26 @@ for file in all_files:
         theta_samples = group['theta']
         phi_samples = group['phi']
 
-        sKDE = spherical_kde.SphericalKDE(phi_samples, theta_samples, weights=None, bandwidth=0.1, density=50) #changed bandwidth from 0.1
-        sKDEList.append((userAndWk[0], userAndWk[1], sKDE))
+        try:
+            sKDE = spherical_kde.SphericalKDE(phi_samples, theta_samples, weights=None, bandwidth=0.1, density=50) #changed bandwidth from 0.1
+        except ValueError:
+            print('ValueError: skipping KDE')
+            continue
+        sKDEList.append((filters[0], filters[1], filters[2], sKDE))
 
         density_vector = np.exp(sKDE(equi_phi, equi_theta))
 
         # dataframe of points and densities
-        arrDensities = np.vstack([[userAndWk[0]]*len(equi_phi), [userAndWk[1]]*len(equi_phi),x,y,z,equi_phi, equi_theta, density_vector])
+        arrDensities = np.vstack([[filters[0]]*len(equi_phi),[filters[1]]*len(equi_phi),[filters[2]]*len(equi_phi),x,y,z,equi_phi, equi_theta, density_vector])
         arrDensities_t = arrDensities.transpose()
 
-        dfDensities = pd.DataFrame(arrDensities_t, columns = ['userID','weekNumber','z', 'x', 'y', 'phi', 'theta', 'density'])
+        dfDensities = pd.DataFrame(arrDensities_t, columns = ['userID','weekNumber','timeOfDay','z', 'x', 'y', 'phi', 'theta', 'density'])
 
         dfOut = dfOut.append(dfDensities)
 
         print(len(dfOut))
 
-dfOut.to_csv('/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/matrix/kde_sampled_points/coords_with_KDEdensities_bw01-'+str(num)+'pts.csv', index=False)
+dfOut.to_csv('/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/KDE_identification/sampledKDEdensities_byTOD_bw01_'+str(num)+'pts.csv', index=False)
 
 print('finish')
 
