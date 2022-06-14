@@ -90,7 +90,7 @@ pi = np.pi
 
 # make equidistant points on sphere to sample
 radius = 1
-num = 1000
+num = 2500
 regular_surf_points = regular_on_sphere_points(radius,num)
 pts_xyz=np.array(regular_surf_points)
 x=pts_xyz[:,0]
@@ -125,10 +125,10 @@ for file in all_files:
         
         # if group size too large, remove every 4th row
         while len(group) > 250000:
-            print('group size above 250000')
-            print(len(group))
+            # print('group size above 250000')
+            # print(len(group))
             group = group[np.mod(np.arange(group.index.size),4)!=0]
-        print('length group: ' + str(len(group)))
+        # print('length group: ' + str(len(group)))
 
         if len(group) < 2:
             continue
@@ -140,19 +140,17 @@ for file in all_files:
         except ValueError:
             print('ValueError: skipping KDE')
             continue
-        sKDEList.append((filters[0], filters[1], filters[2], sKDE))
+        sKDEList.append((filters[0], filters[1], filters[2], len(group), sKDE))
 
         density_vector = np.exp(sKDE(equi_phi, equi_theta))
 
         # dataframe of points and densities
-        arrDensities = np.vstack([[filters[0]]*len(equi_phi),[filters[1]]*len(equi_phi),[filters[2]]*len(equi_phi),x,y,z,equi_phi, equi_theta, density_vector])
+        arrDensities = np.vstack([[filters[0]]*len(equi_phi),[filters[1]]*len(equi_phi),[filters[2]]*len(equi_phi),[len(group)]*len(equi_phi),x,y,z,equi_phi, equi_theta, density_vector])
         arrDensities_t = arrDensities.transpose()
 
-        dfDensities = pd.DataFrame(arrDensities_t, columns = ['userID','weekNumber','timeOfDay','z', 'x', 'y', 'phi', 'theta', 'density'])
+        dfDensities = pd.DataFrame(arrDensities_t, columns = ['userID','weekNumber','timeOfDay','n_accelReadings','z', 'x', 'y', 'phi', 'theta', 'density'])
 
         dfOut = dfOut.append(dfDensities)
-
-        print(len(dfOut))
 
 dfOut.to_csv('/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/KDE_identification/sampledKDEdensities_byTOD_bw01_'+str(num)+'pts.csv', index=False)
 
