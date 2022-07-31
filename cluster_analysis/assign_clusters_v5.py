@@ -9,7 +9,7 @@ import glob
 from scipy import spatial
 import spherical_kde
 
-treeFile = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/optimize_k/tree_nodes_v4.csv'
+treeFile = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/optimize_k/tree_node_cluster.csv'
 pathAccel = '/home/mindy/Desktop/BiAffect-iOS/UnMASCK/BiAffect_data/processed_output/accelerometer/'
 pathOut = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/accel_with_clusters/'
 
@@ -110,7 +110,7 @@ all_files = sorted(glob.glob(pathAccel + "*.parquet"), key = numericalSort)
 for file in all_files:
     dfAccel = pd.read_parquet(file, engine='pyarrow')
     
-    if dfAccel['userID'].iloc[0] > 1:
+    if dfAccel['userID'].iloc[0] > 5:
         break
 
     # filter accel points to be on unit sphere:
@@ -129,12 +129,12 @@ for file in all_files:
         print(len(group))
 
 
-        # if group size too large, remove every 4th row
-        while len(group) > 150000:
-            print('group size above 185000')
-            print(len(group))
-            group = group[np.mod(np.arange(group.index.size),4)!=0]
-        print('length group: ' + str(len(group)))
+        # # if group size too large, remove every 4th row
+        # while len(group) > 150000:
+        #     print('group size above 185000')
+        #     print(len(group))
+        #     group = group[np.mod(np.arange(group.index.size),4)!=0]
+        # print('length group: ' + str(len(group)))
 
 
         # locate cluster center coordinates for user/group pair
@@ -142,60 +142,82 @@ for file in all_files:
         grpClustCtrs = treeNodes.loc[treeNodes['userGroup'] == usrGrp]
         if len(grpClustCtrs) == 0:
             # clust_list.append([0]*len(group))
-            group['cluster'] = [0]*len(group)
+            group['clusterIdx'] = float('NaN')*len(group)
+            dfOut.append(group)
             continue
         # find nearest cluster center to coordinate
         # index is cluster coordinates reindexed 0-len(grpClustCtrs)
-        group['neighborIdx'] = nearest_neighbour(group[['x','y','z']],grpClustCtrs[['x','y','z']])
-        # calculate cosine similarity between coordinate and nearest cluster center
-        group['xN'] = grpClustCtrs['x'].iloc[group['neighborIdx']].reset_index(drop=True) # get X value of cluster center closest to group['x']
-        group['yN'] = grpClustCtrs['y'].iloc[group['neighborIdx']].reset_index(drop=True) # get Y value of cluster center closest to group['y']
-        group['zN'] = grpClustCtrs['z'].iloc[group['neighborIdx']].reset_index(drop=True) # get Z value of cluster center closest to group['z']
-        group['cosine_similarity'] = group.apply(lambda row: cosine_sim(row[['x','y','z']], row[['xN','yN','zN']]), axis=1)
-        
+        group['nodeIdx'] = nearest_neighbour(group[['x','y','z']],grpClustCtrs[['xNode','yNode','zNode']])
 
-        theta_samples = group['theta']
-        phi_samples = group['phi']
-        sKDE = spherical_kde.SphericalKDE(phi_samples, theta_samples, weights=None, bandwidth=0.1, density=50)           
-        equiPts = pd.DataFrame(np.column_stack((equi_phi,equi_theta)), columns=['phi','theta'])
-        equiPts['density'] = np.exp(sKDE(equiPts['phi'], equiPts['theta']))
-        neighborEquiPtIdx = nearest_neighbour(group[['phi','theta']],equiPts[['phi','theta']])
-        group['density'] = equiPts['density'].iloc[neighborEquiPtIdx].reset_index(drop=True) # get phi value of cluster center closest to group['phi']
+        # get cluster index that matches node index
+        dictNodes = dict(zip(grpClustCtrs['node'],grpClustCtrs['cluster']))
+        group['clusterIdx'] = group['nodeIdx'].map(dictNodes)
 
-
-        # if coordinate is close to cluster center (~10 nearest neighbors, 25 degrees) then label cluster by #, else 0
-        # 0 means no cluster
-        # group['cluster'] = np.where(group['cosine_similarity'] >= 0.975, group['neighborIdx']+1, 0)
-
-        group['cluster'] = np.where((group['density'] >= 0.25) | (group['cosine_similarity'] >= 0.975), group['neighborIdx']+1, 0)
-
-
-
-        ##################################
-        # add in something about if cosine_similarity too low, then unlabel cluster
-        # cosine similarity of 0.866 -> 30 degrees
-        group.loc[group['cosine_similarity'] < 0.866, ['cluster']] = 0
-
-
-
-
-        ##################################
-
-
-        # clust_list.append(group['cluster'])
         dfOut.append(group)
         
     
     dfOut = pd.concat(dfOut,axis=0,ignore_index=True)
+    dfOut.to_csv(pathOut + 'user_' + str(userAndGrp[0]) + '_accelData_clusters_v4.csv', index=False)
+
+
+print('finish')
+
+
+
+
+#%%      
+        
+#         # calculate cosine similarity between coordinate and nearest cluster center
+#         group['xN'] = grpClustCtrs['x'].iloc[group['neighborIdx']].reset_index(drop=True) # get X value of cluster center closest to group['x']
+#         group['yN'] = grpClustCtrs['y'].iloc[group['neighborIdx']].reset_index(drop=True) # get Y value of cluster center closest to group['y']
+#         group['zN'] = grpClustCtrs['z'].iloc[group['neighborIdx']].reset_index(drop=True) # get Z value of cluster center closest to group['z']
+#         group['cosine_similarity'] = group.apply(lambda row: cosine_sim(row[['x','y','z']], row[['xN','yN','zN']]), axis=1)
+        
+
+#         theta_samples = group['theta']
+#         phi_samples = group['phi']
+#         sKDE = spherical_kde.SphericalKDE(phi_samples, theta_samples, weights=None, bandwidth=0.1, density=50)           
+#         equiPts = pd.DataFrame(np.column_stack((equi_phi,equi_theta)), columns=['phi','theta'])
+#         equiPts['density'] = np.exp(sKDE(equiPts['phi'], equiPts['theta']))
+#         neighborEquiPtIdx = nearest_neighbour(group[['phi','theta']],equiPts[['phi','theta']])
+#         group['density'] = equiPts['density'].iloc[neighborEquiPtIdx].reset_index(drop=True) # get phi value of cluster center closest to group['phi']
+
+
+#         # if coordinate is close to cluster center (~10 nearest neighbors, 25 degrees) then label cluster by #, else 0
+#         # 0 means no cluster
+#         # group['cluster'] = np.where(group['cosine_similarity'] >= 0.975, group['neighborIdx']+1, 0)
+
+#         group['cluster'] = np.where((group['density'] >= 0.25) | (group['cosine_similarity'] >= 0.975), group['neighborIdx']+1, 0)
+
+
+
+#         ##################################
+#         # add in something about if cosine_similarity too low, then unlabel cluster
+#         # cosine similarity of 0.866 -> 30 degrees
+#         group.loc[group['cosine_similarity'] < 0.866, ['cluster']] = 0
+
+
+
+
+#         ##################################
+
+
+#         # clust_list.append(group['cluster'])
+    #     dfOut.append(group)
+        
+    
+    # dfOut = pd.concat(dfOut,axis=0,ignore_index=True)
 
     # df.to_csv(pathOut + 'user_' + str(userAndGrp[0]) + '_accelData_clusters.csv', index=False)
     #dfOut.to_csv(pathOut + 'user_' + str(userAndGrp[0]) + '_accelData_clusters_v3.csv', index=False)
 
-print('finish')
+# print('finish')
 
-# %%
-group[['index','healthCode','recordId','weekNumber','x','y','z','xN','yN','zN','neighborIdx','cosine_similarity','cluster']].to_csv('/home/mindy/Desktop/test.csv', index=False)
-# %%
-group[['index','healthCode','recordId','weekNumber','x','y','z','neighborIdx','density','cluster']].to_csv('/home/mindy/Desktop/test.csv', index=False)
+# # %%
+# group[['index','healthCode','recordId','weekNumber','x','y','z','xN','yN','zN','neighborIdx','cosine_similarity','cluster']].to_csv('/home/mindy/Desktop/test.csv', index=False)
+# # %%
+# group[['index','healthCode','recordId','weekNumber','x','y','z','neighborIdx','density','cluster']].to_csv('/home/mindy/Desktop/test.csv', index=False)
+
+# # %%
 
 # %%
