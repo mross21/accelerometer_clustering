@@ -88,7 +88,7 @@ def regular_on_sphere_points(r,num):
             points.append([x,y,z])
     return points
 
-#%%
+
 treeNodesCSV = pd.read_csv(treeFile, index_col=False)
 treeNodes = pd.DataFrame(treeNodesCSV)
 
@@ -109,12 +109,17 @@ grouping = 'weekNumber'
 all_files = sorted(glob.glob(pathAccel + "*.parquet"), key = numericalSort)
 for file in all_files:
     dfAccel = pd.read_parquet(file, engine='pyarrow')
-    
-    if dfAccel['userID'].iloc[0] > 5:
-        break
+
+    # print(dfAccel['userID'].iloc[0])
+    # if dfAccel['userID'].iloc[0] < 50:
+    #     # break
+    #     continue
 
     # filter accel points to be on unit sphere:
     df = accel_filter(dfAccel)
+
+    if len(df) == 0:
+        continue
 
     # convert cartesian coordinates to spherical
     addSpherCoords(df)
@@ -126,7 +131,7 @@ for file in all_files:
         group = group.reset_index()
         print('user: ' + str(userAndGrp[0])) # user
         print('grouping: ' + str(userAndGrp[1]))  # time grouping for that user
-        print(len(group))
+        # print(len(group))
 
 
         # # if group size too large, remove every 4th row
@@ -142,7 +147,7 @@ for file in all_files:
         grpClustCtrs = treeNodes.loc[treeNodes['userGroup'] == usrGrp]
         if len(grpClustCtrs) == 0:
             # clust_list.append([0]*len(group))
-            group['clusterIdx'] = float('NaN')*len(group)
+            group['clusterIdx'] = [-1]*len(group)
             dfOut.append(group)
             continue
         # find nearest cluster center to coordinate
@@ -157,6 +162,9 @@ for file in all_files:
         
     
     dfOut = pd.concat(dfOut,axis=0,ignore_index=True)
+
+    dfOut['clusterIdx'] = dfOut['clusterIdx'].fillna(-1)
+
     dfOut.to_csv(pathOut + 'user_' + str(userAndGrp[0]) + '_accelData_clusters_v4.csv', index=False)
 
 

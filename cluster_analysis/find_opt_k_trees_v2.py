@@ -109,8 +109,8 @@ for userGrp, grp in dfByGroup:
     print(str(grouping) + str(groupedBy))
     userGrp = ';'.join([str(user),str(groupedBy)])
 
-    if user > 1:
-        break
+    # if user > 1:
+    #     break
 
     # get distance matrix of haversine distances between points
     dm = pd.DataFrame(squareform(pdist(grp[['theta','phi']], metric=haversine_dist)), index=grp.index, columns=grp.index)
@@ -134,19 +134,18 @@ for i in treeNodes: # iterate through the keys (i is key)
     # kList.append((i,uniqueK)) # indices of local maxima for each user/group pair
 dfK = pd.DataFrame(uniqueK, columns = ['grp','node','density'])
 
-#%%
+
 
 # remove node mappings that lead to centers with too low of density
-dfK_filter = dfK.loc[dfK['density'] > 0.2]
+dfK_filter = dfK.loc[dfK['density'] > 0.3]
 
 for i in treeNodes:
     grp_max = dfK_filter.loc[dfK_filter['grp'] == i]
     for j in list(treeNodes[i].items()):
-        print(j[1]['nodes'][-1])
         if j[1]['nodes'][-1] not in list(grp_max['node']):
             del treeNodes[i][j[0]]
         
-#%%
+
 node_list = []
 node_cluster = []
 for i in treeNodes:
