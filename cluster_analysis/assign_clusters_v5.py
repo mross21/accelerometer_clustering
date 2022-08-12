@@ -152,7 +152,22 @@ for file in all_files:
             continue
         # find nearest cluster center to coordinate
         # index is cluster coordinates reindexed 0-len(grpClustCtrs)
+
+
+
+    ########### EDIT BELOW
+
+
+
+
+        #### something wrong with nearest neighbor distance metric?
         group['nodeIdx'] = nearest_neighbour(group[['x','y','z']],grpClustCtrs[['xNode','yNode','zNode']])
+        #########
+
+
+
+
+
 
         # get cluster index that matches node index
         dictNodes = dict(zip(grpClustCtrs['node'],grpClustCtrs['cluster']))
