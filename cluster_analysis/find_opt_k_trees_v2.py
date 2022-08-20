@@ -96,7 +96,7 @@ def flatten(l):
 # variable to group user's data
 grouping = 'weekNumber'
 # number of nearest neighbors to compare densities to
-n = 9
+n = 6 # used to be 9
 treeNodes = {}
 treeDensity = {}
 dfByGroup = df.groupby(['userID', grouping])
