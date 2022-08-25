@@ -50,6 +50,13 @@ for userGrp, grp in dfByGroup:
     # if distance is less than 0.16, flag as adjacent point
     adjMatrix = np.where(dm < 0.16, 1, 0)
 
+    # get a matrix of weights for each adjacent node (all cells w/ value 1)
+    # w = exp(sigma*1/2(KDE_i + KDE_j))
+    
+
+
+
+
     break
 
 
