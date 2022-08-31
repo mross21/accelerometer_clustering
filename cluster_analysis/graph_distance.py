@@ -2,7 +2,8 @@
 import pandas as pd
 import numpy as np
 from scipy.spatial.distance import squareform, pdist
-from math import cos, sin, asin, sqrt
+from math import cos, sin, asin, sqrt, exp
+import networkx as nx
 
 pathIn = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/matrix/kde_sampled_points/'
 # pathOut = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/optimize_k/'
@@ -33,6 +34,7 @@ def haversine_dist(pt1,pt2): # theta, phi
 grouping = 'weekNumber'
 # number of nearest neighbors to compare densities to
 # n = 9
+sigma = 1
 
 dfByGroup = df.groupby(['userID', grouping])
 for userGrp, grp in dfByGroup:
@@ -46,19 +48,89 @@ for userGrp, grp in dfByGroup:
 
     # get distance matrix of haversine distances between points
     dm = pd.DataFrame(squareform(pdist(grp[['theta','phi']], metric=haversine_dist)), index=grp.index, columns=grp.index)
-    
+# only need it once-move out of loop############################################################
+
     # if distance is less than 0.16, flag as adjacent point
     adjMatrix = np.where(dm < 0.16, 1, 0)
+# only need it once-move out of loop############################################################
+    
+
+    # index 0-997 (998 points)
 
     # get a matrix of weights for each adjacent node (all cells w/ value 1)
     # w = exp(sigma*1/2(KDE_i + KDE_j))
+    # wMatrix = adjMatrix*w
     
-
+    # G = nx.from_numpy_matrix(wMatrix)
 
 
 
     break
 
+
+
+#%%
+######################################################################
+# example for how to create network graph in python
+
+import pandas as pd
+import networkx as nx
+
+# create edgelist as dict
+gwork_edgelist = dict(
+  David = ["Zubin", "Suraya", "Jane"],
+  Jane = ["Zubin", "Suraya"]
+)
+
+# create graph dict
+gwork = nx.Graph(gwork_edgelist)
+
+# see vertices as list
+list(gwork.nodes)
+
+gwork_edgelist=dict(
+  source=["David", "David", "David", "Jane", "Jane"],
+  target=["Zubin", "Suraya", "Jane", "Zubin", "Suraya"]
+)
+
+#create edgelist as Pandas DataFrame
+gwork_edgelist = pd.DataFrame(gwork_edgelist)
+
+# create graph from Pandas DataFrame
+gwork = nx.from_pandas_edgelist(gwork_edgelist)
+
+gmanage_edgelist=dict(
+  David=["Zubin", "Jane"],
+  Suraya=["David"]
+)
+
+# create directed graph
+gmanage=nx.DiGraph(gmanage_edgelist)
+
+# check edges
+list(gmanage.edges)
+
+gwork.is_multigraph()
+gwork.is_directed()
+#%%
+
+import numpy as np
+
+# create adjacency matrix
+adj_flights = np.reshape((0,4,4,5,0,1,2,0,0), (3,3))
+
+# generate directed multigraph 
+multiflights = nx.from_numpy_matrix(adj_flights, parallel_edges=False, create_using=nx.MultiDiGraph())
+
+# name nodes
+label_mapping = {0: "SFO", 1: "PHL", 2: "TUS"}
+multiflights = nx.relabel_nodes(multiflights, label_mapping)
+
+# check some edges
+list(multiflights.edges)[0:3]
+
+# check weights of edges
+[multiflights.edges[i]['weight'] for i in list(multiflights.edges)]
 
 
 
