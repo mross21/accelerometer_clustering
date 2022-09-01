@@ -6,7 +6,7 @@ from math import cos, sin, asin, sqrt, exp
 import networkx as nx
 
 pathIn = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/matrix/kde_sampled_points/'
-# pathOut = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/optimize_k/'
+pathOut = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/graph_matrices/'
 file1000 = 'coords_with_KDEdensities_bw01-1000pts.csv'
 
 df = pd.read_csv(pathIn + file1000, index_col=False)
@@ -29,6 +29,11 @@ def haversine_dist(pt1,pt2): # theta, phi
     d = (sin(lat * 0.5)**2) + (cos(lat1) * cos(lat2) * (sin(lng * 0.5)**2))
     return 2  * asin(sqrt(d))
 
+# # find neighbors
+# def find_neighbors(ptRow, allPts):
+#   idxNeighbors = []
+#   i = ptRow['index']
+#   return(idxNeighbors)
 
 # variable to group user's data
 grouping = 'weekNumber'
@@ -36,101 +41,132 @@ grouping = 'weekNumber'
 # n = 9
 sigma = 1
 
-dfByGroup = df.groupby(['userID', grouping])
-for userGrp, grp in dfByGroup:
-    # reset indexing
-    grp = grp.reset_index()
-    user = userGrp[0]
-    print('user: ' + str(user))
-    groupedBy = userGrp[1]
-    print(str(grouping) + str(groupedBy))
-    userGrp = ';'.join([str(user),str(groupedBy)])
+grp1 = df.loc[(df['userID'] == 1) & (df[grouping] == 1)]
 
-    # get distance matrix of haversine distances between points
-    dm = pd.DataFrame(squareform(pdist(grp[['theta','phi']], metric=haversine_dist)), index=grp.index, columns=grp.index)
-# only need it once-move out of loop############################################################
+ # get distance matrix of haversine distances between points
+dm = pd.DataFrame(squareform(pdist(grp1[['theta','phi']], metric=haversine_dist)), index=grp1.index, columns=grp1.index)
 
-    # if distance is less than 0.16, flag as adjacent point
-    adjMatrix = np.where(dm < 0.16, 1, 0)
-# only need it once-move out of loop############################################################
+# if distance is less than 0.17, flag as adjacent point
+adjMatrix = np.where(dm < 0.165, 1, 0)
+
+# matrix of all edge weights for user 1 week 1
+edge_weights = pd.DataFrame(squareform(pdist(grp1[['density']], lambda u,v: sigma*1/2*(u+v))), index=grp1.index, columns=grp1.index)
+
+# matrix of adjacent weights
+adjacent_weights = edge_weights*adjMatrix
+
+# np.savetxt(pathOut +"distance_matrix.csv", dm, delimiter=",")
+# np.savetxt(pathOut +"adjacency_matrix.csv", adjMatrix, delimiter=",")
+# np.savetxt(pathOut +"all_edge_weights_matrix.csv", edge_weights, delimiter=",")
+# np.savetxt(pathOut +"adjacent_edge_weights_matrix.csv", adjacent_weights, delimiter=",")
+
+# grid = np.meshgrid(list_num,list_num, sparse=True)
+
+# dfByGroup = df.groupby(['userID', grouping])
+# for userGrp, grp in dfByGroup:
+#     # reset indexing
+#     grp = grp.reset_index()
+#     user = userGrp[0]
+#     print('user: ' + str(user))
+#     groupedBy = userGrp[1]
+#     print(str(grouping) + str(groupedBy))
+#     userGrp = ';'.join([str(user),str(groupedBy)])
+
+   
+
+#     # index 0-997 (998 points)
+
+#     # get a matrix of weights for each adjacent node (all cells w/ value 1)
+#     # w = exp(sigma*1/2(KDE_i + KDE_j))
+#     # wMatrix = adjMatrix*w
     
-
-    # index 0-997 (998 points)
-
-    # get a matrix of weights for each adjacent node (all cells w/ value 1)
-    # w = exp(sigma*1/2(KDE_i + KDE_j))
-    # wMatrix = adjMatrix*w
-    
-    # G = nx.from_numpy_matrix(wMatrix)
+#     # G = nx.from_numpy_matrix(wMatrix)
 
 
 
-    break
+#     break
 
+#%%
+import matplotlib.pyplot as plt
+fig = plt.figure(figsize=(16,4))
+plt.imshow(dm[500:510], interpolation='nearest')
+# plt.savefig('/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/plots/distance_matrix_heatmap-500-510.jpg')
 
 
 #%%
-######################################################################
-# example for how to create network graph in python
 
-import pandas as pd
-import networkx as nx
+# other way to find neighbors
+neighbors_list = []
+for i in range(len(adjMatrix)):
+  neighbors = np.where(adjMatrix[i] == 1)
+  neighbors_list.append((i,list(neighbors)))
 
-# create edgelist as dict
-gwork_edgelist = dict(
-  David = ["Zubin", "Suraya", "Jane"],
-  Jane = ["Zubin", "Suraya"]
-)
+dfNeighbors = pd.DataFrame(neighbors_list, columns = ['point_index','neighbors_indices'])
+dfNeighbors.to_csv(pathOut + 'neighbors.csv',index=False)
 
-# create graph dict
-gwork = nx.Graph(gwork_edgelist)
 
-# see vertices as list
-list(gwork.nodes)
-
-gwork_edgelist=dict(
-  source=["David", "David", "David", "Jane", "Jane"],
-  target=["Zubin", "Suraya", "Jane", "Zubin", "Suraya"]
-)
-
-#create edgelist as Pandas DataFrame
-gwork_edgelist = pd.DataFrame(gwork_edgelist)
-
-# create graph from Pandas DataFrame
-gwork = nx.from_pandas_edgelist(gwork_edgelist)
-
-gmanage_edgelist=dict(
-  David=["Zubin", "Jane"],
-  Suraya=["David"]
-)
-
-# create directed graph
-gmanage=nx.DiGraph(gmanage_edgelist)
-
-# check edges
-list(gmanage.edges)
-
-gwork.is_multigraph()
-gwork.is_directed()
 #%%
+# ######################################################################
+# # example for how to create network graph in python
 
-import numpy as np
+# import pandas as pd
+# import networkx as nx
 
-# create adjacency matrix
-adj_flights = np.reshape((0,4,4,5,0,1,2,0,0), (3,3))
+# # create edgelist as dict
+# gwork_edgelist = dict(
+#   David = ["Zubin", "Suraya", "Jane"],
+#   Jane = ["Zubin", "Suraya"]
+# )
 
-# generate directed multigraph 
-multiflights = nx.from_numpy_matrix(adj_flights, parallel_edges=False, create_using=nx.MultiDiGraph())
+# # create graph dict
+# gwork = nx.Graph(gwork_edgelist)
 
-# name nodes
-label_mapping = {0: "SFO", 1: "PHL", 2: "TUS"}
-multiflights = nx.relabel_nodes(multiflights, label_mapping)
+# # see vertices as list
+# list(gwork.nodes)
 
-# check some edges
-list(multiflights.edges)[0:3]
+# gwork_edgelist=dict(
+#   source=["David", "David", "David", "Jane", "Jane"],
+#   target=["Zubin", "Suraya", "Jane", "Zubin", "Suraya"]
+# )
 
-# check weights of edges
-[multiflights.edges[i]['weight'] for i in list(multiflights.edges)]
+# #create edgelist as Pandas DataFrame
+# gwork_edgelist = pd.DataFrame(gwork_edgelist)
+
+# # create graph from Pandas DataFrame
+# gwork = nx.from_pandas_edgelist(gwork_edgelist)
+
+# gmanage_edgelist=dict(
+#   David=["Zubin", "Jane"],
+#   Suraya=["David"]
+# )
+
+# # create directed graph
+# gmanage=nx.DiGraph(gmanage_edgelist)
+
+# # check edges
+# list(gmanage.edges)
+
+# gwork.is_multigraph()
+# gwork.is_directed()
+# #%%
+
+# import numpy as np
+
+# # create adjacency matrix
+# adj_flights = np.reshape((0,4,4,5,0,1,2,0,0), (3,3))
+
+# # generate directed multigraph 
+# multiflights = nx.from_numpy_matrix(adj_flights, parallel_edges=False, create_using=nx.MultiDiGraph())
+
+# # name nodes
+# label_mapping = {0: "SFO", 1: "PHL", 2: "TUS"}
+# multiflights = nx.relabel_nodes(multiflights, label_mapping)
+
+# # check some edges
+# list(multiflights.edges)[0:3]
+
+# # check weights of edges
+# [multiflights.edges[i]['weight'] for i in list(multiflights.edges)]
 
 
 
@@ -140,4 +176,4 @@ list(multiflights.edges)[0:3]
 
 
 
-# %%
+# # %%
