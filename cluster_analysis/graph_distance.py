@@ -53,12 +53,30 @@ adjMatrix = np.where(dm < 0.165, 1, 0)
 edge_weights = pd.DataFrame(squareform(pdist(grp1[['density']], lambda u,v: sigma*1/2*(u+v))), index=grp1.index, columns=grp1.index)
 
 # matrix of adjacent weights
-adjacent_weights = edge_weights*adjMatrix
+adj_weights = edge_weights*adjMatrix
 
 # np.savetxt(pathOut +"distance_matrix.csv", dm, delimiter=",")
 # np.savetxt(pathOut +"adjacency_matrix.csv", adjMatrix, delimiter=",")
 # np.savetxt(pathOut +"all_edge_weights_matrix.csv", edge_weights, delimiter=",")
-# np.savetxt(pathOut +"adjacent_edge_weights_matrix.csv", adjacent_weights, delimiter=",")
+# np.savetxt(pathOut +"adjacent_edge_weights_matrix.csv", adj_weights, delimiter=",")
+
+
+#%%
+G = nx.from_numpy_matrix(np.array(adj_weights), parallel_edges=False, create_using=nx.Graph())
+
+
+#%%
+from pyvis.network import Network
+
+# create pyvis Network object
+net = Network(height = "500px", width = "600px", notebook = True)
+
+# import karate graph
+net.from_nx(G)
+net.show('out1.html')
+
+#%%
+
 
 # grid = np.meshgrid(list_num,list_num, sparse=True)
 
