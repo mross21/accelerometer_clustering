@@ -37,8 +37,9 @@ def haversine_dist(pt1,pt2): # theta, phi
 
 # variable to group user's data
 grouping = 'weekNumber'
-# number of nearest neighbors to compare densities to
-# n = 9
+# max distance between neighbors
+d = 0.17
+
 sigma = 1
 
 grp1 = df.loc[(df['userID'] == 1) & (df[grouping] == 1)]
@@ -46,8 +47,8 @@ grp1 = df.loc[(df['userID'] == 1) & (df[grouping] == 1)]
  # get distance matrix of haversine distances between points
 dm = pd.DataFrame(squareform(pdist(grp1[['theta','phi']], metric=haversine_dist)), index=grp1.index, columns=grp1.index)
 
-# if distance is less than 0.17, flag as adjacent point
-adjMatrix = np.where(dm < 0.165, 1, 0)
+# if distance is less than d, flag as adjacent point
+adjMatrix = np.where(dm < d, 1, 0)
 
 # matrix of all edge weights for user 1 week 1
 edge_weights = pd.DataFrame(squareform(pdist(grp1[['density']], lambda u,v: sigma*1/2*(u+v))), index=grp1.index, columns=grp1.index)
@@ -61,19 +62,29 @@ adj_weights = edge_weights*adjMatrix
 # np.savetxt(pathOut +"adjacent_edge_weights_matrix.csv", adj_weights, delimiter=",")
 
 
-#%%
 G = nx.from_numpy_matrix(np.array(adj_weights), parallel_edges=False, create_using=nx.Graph())
 
 
 #%%
+# # visualize static graph
+# not great way to visualize without adjusting node/edge sizes etc
+# import numpy as np
+# from matplotlib import pyplot as plt
+
+# # set seed for reproducibility
+# np.random.seed(123)
+# fig = nx.draw(G)
+#%%
+# visualize interactive graph 
 from pyvis.network import Network
 
 # create pyvis Network object
-net = Network(height = "500px", width = "600px", notebook = True)
-
-# import karate graph
+net = Network(height = "800px", width = "800px", notebook = True)
+# np.random.seed(111)
+# import graph
 net.from_nx(G)
-net.show('out1.html')
+# save interactive plot
+net.show(pathOut + 'weighted_graph.html')
 
 #%%
 
@@ -105,6 +116,7 @@ net.show('out1.html')
 #     break
 
 #%%
+# check distance matrix
 import matplotlib.pyplot as plt
 fig = plt.figure(figsize=(16,4))
 plt.imshow(dm[500:510], interpolation='nearest')
@@ -117,10 +129,13 @@ plt.imshow(dm[500:510], interpolation='nearest')
 neighbors_list = []
 for i in range(len(adjMatrix)):
   neighbors = np.where(adjMatrix[i] == 1)
+  if np.shape(neighbors)[1] > 9:
+    print(i)
+    print('too many neighbors')
   neighbors_list.append((i,list(neighbors)))
 
 dfNeighbors = pd.DataFrame(neighbors_list, columns = ['point_index','neighbors_indices'])
-dfNeighbors.to_csv(pathOut + 'neighbors.csv',index=False)
+dfNeighbors.to_csv(pathOut + 'neighbors-d17.csv',index=False)
 
 
 #%%
