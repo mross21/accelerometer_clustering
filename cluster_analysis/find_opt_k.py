@@ -33,8 +33,9 @@ def haversine_dist(pt1,pt2): # theta, phi
     return 2  * asin(sqrt(d))
 
 def find_optK(distance_matrix,density_list,nNeighbors):
-    densityThresh = 0.3 #max(density_list)/10
+    densityThresh = max(density_list)/5 # 0.3
     num_clusters = 0
+    idx_list = []
     for i in range(len(distance_matrix)):
         # sort distances by ascending order
         dmSort = distance_matrix[i].sort_values()
@@ -42,10 +43,12 @@ def find_optK(distance_matrix,density_list,nNeighbors):
         idxClosePts = dmSort[0:nNeighbors].index 
         # get corresponding densities of those points
         densities = density_list.iloc[idxClosePts]
-        # if idx point has largest density [and density > 1/10 max density], add cluster
+        # if idx point has largest density [and density > frac max density], add cluster
         add_clust = np.where((max(densities) == densities.iloc[0]) & (densities.iloc[0] >= densityThresh), 1, 0)
         num_clusters = num_clusters + add_clust
-    return(num_clusters)
+        if add_clust == 1:
+            idx_list.append(i)
+    return(num_clusters, idx_list)
 
 # # subset to user 1 week 1
 # df = df.loc[(df['userID'] == 1) & (df['weekNumber'] == 1)]
@@ -53,30 +56,38 @@ def find_optK(distance_matrix,density_list,nNeighbors):
 # variable to group user's data
 grouping = 'weekNumber'
 # number of nearest neighbors to compare densities to
-nPts = [20,30,40,50,60,70,80,90,100,110,120,130] # [25,50,75,100,125,150,175,200]
+#nPts = [20,30,40,50,60,70,80,90,100,110,120,130] # [25,50,75,100,125,150,175,200]
+nPts = [9]
 kList = []
+# get distance matrix of haversine distances between points
+grp1 = df.loc[(df['userID'] == 1) & (df[grouping] == 1)]
+dm = pd.DataFrame(squareform(pdist(grp1[['theta','phi']], metric=haversine_dist)), index=grp1.index, columns=grp1.index)
+
 dfByGroup = df.groupby(['userID', grouping])
 for userGrp, grp in dfByGroup:
-        # reset indexing
+    # reset indexing
     grp = grp.reset_index()
     user = userGrp[0]
     print('user: ' + str(user))
     groupedBy = userGrp[1]
     print(str(grouping) + str(groupedBy))
-    if user > 4:
+    if groupedBy > 1:
         break
+    # if user > 1:
+    #     break
     for n in nPts:
         print('n: ' + str(n))
-        # get distance matrix of haversine distances between points
-        dm = pd.DataFrame(squareform(pdist(grp[['theta','phi']], metric=haversine_dist)), index=grp.index, columns=grp.index)
         # get number of clusters for grouping
-        numK = find_optK(dm, grp['density'],n)
-        kList.append((user,groupedBy,n,numK))
+        optK = find_optK(dm, grp['density'],n)
+        numK = optK[0]
+        idxList = optK[1]
+        densities = grp['density'].iloc[idxList]
+        kList.append((user,groupedBy,n,numK, idxList, densities))
         print('clusters: ' + str(numK))
     print('=====')
 
-dfK = pd.DataFrame(kList, columns = ['userID', grouping, 'n_neighbors','k'])
-dfK.to_csv(pathOut + 'test_parameters_for_optK_1000pts_KDEbw01_sample03DensityThresh.csv', index=False)
+dfK = pd.DataFrame(kList, columns = ['userID', grouping, 'n_neighbors','k','cluster_idx','densities'])
+# dfK.to_csv(pathOut + 'test_parameters_for_optK_1000pts_KDEbw01_sample03DensityThresh.csv', index=False)
 
 print('finish')
 

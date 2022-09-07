@@ -28,7 +28,7 @@ def haversine_dist(pt1,pt2): # theta, phi
     return 2  * asin(sqrt(d))
 
 def find_optK(distance_matrix,density_list,nNeighbors):
-    densityThresh = 0.3 #max(density_list)/10
+    densityThresh = max(density_list)/10 # 0.3
     num_clusters = 0
     for i in range(len(distance_matrix)):
         # sort distances by ascending order
