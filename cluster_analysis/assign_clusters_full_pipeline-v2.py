@@ -170,13 +170,6 @@ for file in all_files:
         print('user: ' + str(user)) # user
         print('week: ' + str(wk))  # week number
 
-        # sometimes my kernal would crash so if group size too large, remove every 4th row
-        # while len(accGrp) > 700000: # change value to be as large as possible
-        #     print('group size too large')
-        #     print(len(accGrp))
-        #     accGrp = accGrp[np.mod(np.arange(accGrp.index.size),4)!=0]
-        print('accel group length: ' + str(len(accGrp)))
-
         # if group has no data, skip group
         if len(accGrp) < 2:
             continue
