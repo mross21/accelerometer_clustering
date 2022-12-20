@@ -88,8 +88,16 @@ equi_theta = np.ndarray.round(np.arccos(z / np.sqrt(x**2 + y**2 + z**2)),2)
 
 # loop through accelerometer files
 for file in all_files:
+<<<<<<< Updated upstream
     dfAccel = pd.read_csv(file, index_col=False)
     # dfAccel = pd.read_parquet(file, engine='pyarrow')
+=======
+    # dfAccel = pd.read_csv(file, index_col=False)
+    dfAccel = pd.read_parquet(file, engine='pyarrow')
+
+    if dfAccel['userID'].unique() != 4:
+        continue
+>>>>>>> Stashed changes
 
     # filter accel points to only include when phone is stationary (magnitude ~1)
     dfAccel = accel_filter(dfAccel)
@@ -103,11 +111,40 @@ for file in all_files:
         print('user: ' + str(userGrp[0])) # user
         print('time group: ' + str(userGrp[1]))  # time group
 
+<<<<<<< Updated upstream
         # if group size too large, remove every 4th row
         while len(group) > 70000:
             print('group size above 70000')
             print(len(group))
             group = group[np.mod(np.arange(group.index.size),4)!=0]
+=======
+        if userGrp[1] != 15:
+            continue
+
+        # if userGrp[0] < 230:
+        #     continue
+
+        # if (userGrp[0] > 100) & (userGrp[0] < 180):
+        #     continue
+
+        # if (userGrp[0] > 180) & (userGrp[0] < 337):
+        #     continue
+
+        # if (userGrp[0] > 337) & (userGrp[0] < 350):
+        #     continue
+
+        # if userGrp[0] > 230:
+        #     break
+
+
+        # # if group size too large, remove every 4th row
+        # while len(group) > 69500:
+        #     print('group size too big')
+        #     print(len(group))
+        #     group = group[np.mod(np.arange(group.index.size),4)!=0]
+        
+        print(len(group))
+>>>>>>> Stashed changes
 
         # if group length less than 2 rows, skip plot
         if len(group) < 2:
@@ -128,7 +165,12 @@ for file in all_files:
         dfDensities = pd.DataFrame(arrDensities_t, columns = ['z', 'x', 'y', 'phi', 'theta', 'density'])
 
         # 2D density plot
+<<<<<<< Updated upstream
         fig = plt.figure()
+=======
+        fig = plt.figure(facecolor=(1, 1, 1))
+        plt.rcParams.update({'font.size': 18})
+>>>>>>> Stashed changes
         ax = fig.add_subplot()
         d = dfDensities['density']
         #XZ
@@ -136,9 +178,20 @@ for file in all_files:
         ax.set_ylabel('Z')
         p = ax.scatter(dfDensities['x'], dfDensities['z'], c=d, s=50, cmap = 'viridis_r')
         plt.colorbar(p)
+<<<<<<< Updated upstream
         # plt.show()
         plt.savefig(plotPath + '2D_plotXZ_user_' + str(userGrp[0]) + '_timeGroup_' + str(userGrp[1]) + '.png')
         plt.close()
         plt.clf()
+=======
+        plt.show()
+        # plt.savefig(plotPath + '2D_plotXZ_user_' + str(int(userGrp[0])) + '_week_' + str(int(userGrp[1])) + '.png') # '_fixScale.png')
+        # plt.close()
+        # plt.clf()
+
+        break
+>>>>>>> Stashed changes
 
 print('finish')
+
+# %%
