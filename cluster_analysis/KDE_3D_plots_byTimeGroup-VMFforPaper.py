@@ -86,7 +86,7 @@ pi = np.pi
 
 # make equidistant points on sphere to sample KDE at
 radius = 1
-num = 20000
+num = 1000 #20000
 regular_surf_points = regular_on_sphere_points(radius,num)
 pts_xyz=np.array(regular_surf_points)
 x=pts_xyz[:,0]
@@ -103,7 +103,7 @@ for file in all_files:
     user = int(dfAccel['userID'].unique())
     print(user)
 
-    if dfAccel['userID'].unique() != 25:
+    if dfAccel['userID'].unique() != 4:
         continue
 
 
@@ -112,17 +112,17 @@ for file in all_files:
     # convert cartesian coordinates to spherical coordinates
     addSpherCoords(dfAccel)
 
-    group = dfAccel.loc[dfAccel['weekNumber'] == 1]
+    group = dfAccel.loc[dfAccel['weekNumber'] == 15]
     week = int(group['weekNumber'].unique())
     
+    
 
-
-    # if group size too large, remove every 4th row
-    while len(group) > 30000:
-        print('group size above 50000')
-        print(len(group))
-        group = group[np.mod(np.arange(group.index.size),4)!=0]
-    print(len(group))
+    # # if group size too large, remove every 4th row
+    # while len(group) > 30000:
+    #     print('group size above 50000')
+    #     print(len(group))
+    #     group = group[np.mod(np.arange(group.index.size),4)!=0]
+    # print(len(group))
     
 
 
@@ -141,13 +141,13 @@ for file in all_files:
 
 #%%
 
-fig = plt.figure(facecolor=(1, 1, 1), figsize = (10,10))
+fig = plt.figure(facecolor=(1, 1, 1), figsize = (11,11))
 plt.rcParams.update({'font.size': 18})
 
 ax = plt.axes(projection='3d')
 
 
-ax.scatter(grpKDE['x'], grpKDE['y'], grpKDE['z'], c=grpKDE['density'],cmap='viridis_r')
+p=ax.scatter(grpKDE['x'], grpKDE['y'], grpKDE['z'], c=grpKDE['density'],cmap='viridis_r')
 ax.set_xlabel('X')
 ax.set_ylabel('Y')
 ax.set_zlabel('Z')
@@ -163,7 +163,8 @@ ax.tick_params(axis='z', which='major', pad=15, rotation=-10)
 ax.xaxis.set_major_locator(plt.MaxNLocator(9))
 ax.yaxis.set_major_locator(plt.MaxNLocator(9))
 ax.zaxis.set_major_locator(plt.MaxNLocator(9))
-
+cbar=plt.colorbar(p,fraction=0.03)
+cbar.set_label('Density')
 
 
 
@@ -171,7 +172,6 @@ ax.view_init(-20,280)
 
 plt.show()
 
-    # break
   
 
 #%%
