@@ -46,7 +46,7 @@ pathAccel = '/home/mindy/Desktop/BiAffect-iOS/UnMASCK/BiAffect_data/processed_ou
 
 # list of user accel files
 all_files = sorted(glob.glob(pathAccel + "*.parquet"), key = numericalSort)
-
+pathOut = '/home/mindy/Desktop/BiAffect-iOS/UnMASCK/accelerometer_3D_plots/'
 ### ######################################################################################################
 # GET SPHERICAL KDE (VMF) FOR USER/WEEK
 
@@ -85,7 +85,7 @@ for file in all_files:
 
 
         fig = plt.figure(facecolor=(1, 1, 1), figsize = (11,11))
-        plt.rcParams.update({'font.size': 18})
+        plt.rcParams.update({'font.size': 16})
 
         ax = plt.axes(projection='3d')
 
@@ -96,19 +96,22 @@ for file in all_files:
         ax.set_xlim(-1,1)
         ax.set_ylim(-1,1)
         ax.set_zlim(-1,1)
-        ax.xaxis.labelpad = 20
-        ax.yaxis.labelpad = 30
-        ax.zaxis.labelpad = 15
-        ax.tick_params(axis='x', which='major', pad=5, rotation=10)
-        ax.tick_params(axis='y', which='major', pad=10, rotation=-20)
-        ax.tick_params(axis='z', which='major', pad=7, rotation=-20)
+        ax.xaxis.labelpad = 30
+        ax.yaxis.labelpad = 10
+        ax.zaxis.labelpad = 20
+        ax.tick_params(axis='x', which='major', pad=15, rotation=-20)
+        ax.tick_params(axis='y', which='major', pad=0, rotation=0)
+        ax.tick_params(axis='z', which='major', pad=12, rotation=0)
         ax.xaxis.set_major_locator(plt.MaxNLocator(9))
         ax.yaxis.set_major_locator(plt.MaxNLocator(9))
         ax.zaxis.set_major_locator(plt.MaxNLocator(9))
 
-        ax.view_init(20,140)
+        ax.view_init(20,190)
 
-        plt.show()
+        # plt.show()
+
+        plt.savefig(pathOut + 'u'+str(user)+'_wk'+str(wk)+'.png')
+
 
     #     break
     # break
