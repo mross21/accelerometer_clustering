@@ -84,6 +84,18 @@ for file in all_files:
         z=pd.to_numeric(accGrp['z'])
 
 
+
+        # fig = plt.figure(facecolor=(1, 1, 1), figsize = (11,11))
+        plt.scatter(x,z, s=1)
+        plt.xlabel("X axis")
+        plt.ylabel("Z axis")
+        plt.show()
+
+        break
+    
+
+
+#%%
         fig = plt.figure(facecolor=(1, 1, 1), figsize = (11,11))
         plt.rcParams.update({'font.size': 16})
 
