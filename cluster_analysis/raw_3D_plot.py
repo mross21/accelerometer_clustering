@@ -85,22 +85,22 @@ for file in all_files:
 
 
 
-        fig = plt.figure(facecolor=(1, 1, 1), figsize = (8,6))
-        plt.scatter(x,z, s=5)
-        plt.xlim(-1,1)
-        plt.ylim(-1,1)
-        plt.xlabel("X axis", size=24)
-        plt.ylabel("Z axis", size=24)
-        plt.xticks(fontsize=20,rotation=45) #, ha='right')
-        plt.yticks(fontsize=20)
-        plt.show()
+        # fig = plt.figure(facecolor=(1, 1, 1), figsize = (8,6))
+        # plt.scatter(x,z, s=5)
+        # plt.xlim(-1,1)
+        # plt.ylim(-1,1)
+        # plt.xlabel("X axis", size=24)
+        # plt.ylabel("Z axis", size=24)
+        # plt.xticks(fontsize=20,rotation=45) #, ha='right')
+        # plt.yticks(fontsize=20)
+        # plt.show()
 
-        break
+        # break
     
     
 
 
-#%%
+
         fig = plt.figure(facecolor=(1, 1, 1), figsize = (11,11))
         plt.rcParams.update({'font.size': 16})
 
@@ -125,13 +125,13 @@ for file in all_files:
 
         ax.view_init(20,190)
 
-        # plt.show()
+        plt.show()
 
-        plt.savefig(pathOut + 'u'+str(user)+'_wk'+str(wk)+'.png')
+        # plt.savefig(pathOut + 'u'+str(user)+'_wk'+str(wk)+'.png')
 
 
-    #     break
-    # break
+        break
+    break
 
 
 # %%
