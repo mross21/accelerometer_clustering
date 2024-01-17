@@ -298,7 +298,7 @@ accGrp_filter['cluster_center_z'] = accGrp_filter['nodeIdx'].map(dictClustZ)
 
 ## ######################################################################################################
 # XZ plot of labeled accelerometer data
-plt.rcParams.update({'font.size': 32})
+plt.rcParams.update({'font.size': 40})
 groupAcc_filter=accGrp_filter
 fig = plt.figure(figsize=(16,16),facecolor=(1, 1, 1))
 ax = fig.add_subplot()
@@ -310,9 +310,9 @@ ax.scatter(groupAcc_filter['x'], groupAcc_filter['z'], c=groupAcc_filter['cluste
 #     plt.text(cluster_x[i],cluster_z[i],str(list(dictID.values())[i]), color="red", fontsize=16)
 plt.xlim([-1.2,1.2])
 plt.ylim([-1.2,1.2])
-# plt.show()
+plt.show()
 # plt.savefig(pathFig+positions[p]+'_XZ.png')
-plt.savefig(pathFig+'allPositions_XZ.png')
+# plt.savefig(pathFig+'allPositions_XZ.png')
 
 # XY plot
 fig = plt.figure(figsize=(16,16),facecolor=(1, 1, 1))
@@ -325,9 +325,9 @@ ax.scatter(groupAcc_filter['x'], groupAcc_filter['y'], c=groupAcc_filter['cluste
 #     plt.text(cluster_x[i],cluster_y[i],str(list(dictID.values())[i]), color="red", fontsize=16)
 plt.xlim([-1.2,1.2])
 plt.ylim([-1.2,1.2])
-# plt.show()
+plt.show()
 # plt.savefig(pathFig+positions[p]+'_XY.png')
-plt.savefig(pathFig+'allPositions_XY.png')
+# plt.savefig(pathFig+'allPositions_XY.png')
 
 # YZ plot
 fig = plt.figure(figsize=(16,16),facecolor=(1, 1, 1))
@@ -340,11 +340,11 @@ ax.scatter(groupAcc_filter['y'], groupAcc_filter['z'], c=groupAcc_filter['cluste
 #     plt.text(cluster_y[i],cluster_z[i],str(list(dictID.values())[i]), color="red", fontsize=16)
 plt.xlim([-1.2,1.2])
 plt.ylim([-1.2,1.2])
-# plt.show()
+plt.show()
 # plt.savefig(pathFig+positions[p]+'_YZ.png')
-plt.savefig(pathFig+'allPositions_YZ.png')
+# plt.savefig(pathFig+'allPositions_YZ.png')
 
-plt.close('all')
+# plt.close('all')
 
 ### ######################################################################################################
 # save KDE points
@@ -377,6 +377,7 @@ dfAccel.groupby('position').count()
 
 #%%
 # plot raw accel points colored by position
+plt.rcParams.update({'font.size': 40})
 # XZ
 fig = plt.figure(figsize=(16,16),facecolor=(1, 1, 1))
 ax = fig.add_subplot()
