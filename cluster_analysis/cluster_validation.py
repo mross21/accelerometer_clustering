@@ -295,25 +295,25 @@ accGrp_filter['cluster_center_z'] = accGrp_filter['nodeIdx'].map(dictClustZ)
 # # append updated accel group
 # accOut.append(accGrp_filter)
 # print('finished adding cluster labels to accelerometer data')
-
+#%%
 ## ######################################################################################################
 # XZ plot of labeled accelerometer data
-plt.rcParams.update({'font.size': 40})
+plt.rcParams.update({'font.size': 39})
 groupAcc_filter=accGrp_filter
 fig = plt.figure(figsize=(16,16),facecolor=(1, 1, 1))
 ax = fig.add_subplot()
 ax.set_xlabel('X')
 ax.set_ylabel('Z')
-ax.scatter(groupAcc_filter['x'], groupAcc_filter['z'], c=groupAcc_filter['cluster_center'], cmap='Set2_r')
+ax.scatter(groupAcc_filter['x'], groupAcc_filter['z'], c=groupAcc_filter['cluster_center'], cmap='Set2_r', s=100)
 # ax.scatter(cluster_x,cluster_z, c='red')
 # for i in range(len(cluster_idx)):
 #     plt.text(cluster_x[i],cluster_z[i],str(list(dictID.values())[i]), color="red", fontsize=16)
 plt.xlim([-1.2,1.2])
 plt.ylim([-1.2,1.2])
-plt.show()
+# plt.show()
 # plt.savefig(pathFig+positions[p]+'_XZ.png')
-# plt.savefig(pathFig+'allPositions_XZ.png')
-
+plt.savefig(pathFig+'allPositions_XZ.png')
+#%%
 # XY plot
 fig = plt.figure(figsize=(16,16),facecolor=(1, 1, 1))
 ax = fig.add_subplot()
@@ -377,7 +377,7 @@ dfAccel.groupby('position').count()
 
 #%%
 # plot raw accel points colored by position
-plt.rcParams.update({'font.size': 40})
+plt.rcParams.update({'font.size': 39})
 # XZ
 fig = plt.figure(figsize=(16,16),facecolor=(1, 1, 1))
 ax = fig.add_subplot()
@@ -392,11 +392,11 @@ ax.set_xlabel('X')
 ax.set_ylabel('Z')
 plt.xlim([-1.2,1.2])
 plt.ylim([-1.2,1.2])
-ax.scatter(dfAccel['x'], dfAccel['z'], c=dfAccel['position'].map(colors), alpha=1)
+ax.scatter(dfAccel['x'], dfAccel['z'], c=dfAccel['position'].map(colors), alpha=1, s=100)
 # plt.show()
 plt.savefig(pathFig+'rawData_allPositions_XZ.png')
 
-
+#%%
 #XY
 fig = plt.figure(figsize=(16,16),facecolor=(1, 1, 1))
 ax = fig.add_subplot()
@@ -412,8 +412,8 @@ ax.set_ylabel('Y')
 plt.xlim([-1.2,1.2])
 plt.ylim([-1.2,1.2])
 ax.scatter(dfAccel['x'], dfAccel['y'], c=dfAccel['position'].map(colors), alpha=1)
-# plt.show()
-plt.savefig(pathFig+'rawData_allPositions_XY.png')
+plt.show()
+# plt.savefig(pathFig+'rawData_allPositions_XY.png')
 
 #YZ
 fig = plt.figure(figsize=(16,16),facecolor=(1, 1, 1))
@@ -430,7 +430,7 @@ ax.set_ylabel('Z')
 plt.xlim([-1.2,1.2])
 plt.ylim([-1.2,1.2])
 ax.scatter(dfAccel['y'], dfAccel['z'], c=dfAccel['position'].map(colors), alpha=1)
-# plt.show()
-plt.savefig(pathFig+'rawData_allPositions_YZ.png')
+plt.show()
+# plt.savefig(pathFig+'rawData_allPositions_YZ.png')
 
 # %%
