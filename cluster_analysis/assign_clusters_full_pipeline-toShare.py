@@ -1,3 +1,12 @@
+"""
+@author: Mindy Ross
+python version 3.7.4
+pandas version: 1.3.5
+numpy version: 1.19.2
+"""
+
+# Requires that file paths are inserted in lines 117-123
+
 #%%
 # import packages
 import pandas as pd
@@ -351,5 +360,3 @@ for file in all_files:
     dfK.to_csv(pathAccOut + 'k_list.csv', index=False)
 
 print('finished with everything')
-
-#%%
