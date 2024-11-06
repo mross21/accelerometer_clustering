@@ -1,9 +1,4 @@
-#%%
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
-Created on Sat Jan  8 12:57:07 2022
-
 @author: aleow
 """
 
@@ -54,28 +49,3 @@ def regular_on_sphere_points(r,num):
             z = r * math.cos(theta)
             points.append([x,y,z])
     return points
-
-
-radius = 1
-num = 5000
-
-#print ("Randomly distributed points")
-#random_surf_points = random_on_sphere_points(radius,points)
-#pprint(random_surf_points)
-#print " "
-
-print ("Evenly distributed points")
-regular_surf_points = regular_on_sphere_points(radius,num)
-
-
-xyz=np.array(regular_surf_points)
-x=xyz[:,0]
-y=xyz[:,1]
-z=xyz[:,2]
-
-
-plt.plot(x, y, ',')
-plt.axes().set_aspect('equal')
-plt.show()
-
-# %%
