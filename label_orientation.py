@@ -1,3 +1,9 @@
+"""
+@author: Mindy Ross
+python version 3.7.4
+pandas version: 1.3.5
+numpy version: 1.19.2
+"""
 #%%
 ## LABEL SESSION PHONE ORIENTATION
 # based on median XYZ values
@@ -66,30 +72,3 @@ def binary_orientation(session):
     else:
         label = str('not_horizontal')
     return(label)
-
-
-
-
-#%%
-## TEST FUNCTIONS
-
-# label Faraz's test data
-import glob
-
-pathIn = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/test_data/'
-files = glob.glob(pathIn + "*.csv")
-
-for filename in files:
-    df = pd.read_csv(filename, index_col=False)
-    print(filename)
-
-    l = label_orientation(df)
-    print(l)
-    # all sessions labeled correctly except flat_on_back. 
-    # data functionally looks like upright  
-
-    h = binary_orientation(df)
-    print(h)
-
-# %%
-
