@@ -1,3 +1,5 @@
-# BiAffect accelerometer clustering
+# Clustering Method for Accelerometer Data
 
-Cluster accelerometer XYZ readings to find the common phone orientations on a weekly basis unique to each subject. Pipeline to get cluster labels for each accelerometer reading located within "cluster_analysis" file.
+A novel algorithm to cluster spherical accelerometer XYZ readings obtained from smartphones for use to identify the predominant phone orientations used during the time of accelerometer recording. Method described in detail in the below publication:
+
+Ross, M. K., Tulabandhula, T., Bennett, C. C., Baek, E., Kim, D., Hussain, F., et al. A Novel Approach to Clustering Accelerometer Data for Application in Passive Predictions of Changes in Depression Severity. Sensors 23, 1585 (2023).
