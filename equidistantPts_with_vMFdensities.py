@@ -1,3 +1,11 @@
+"""
+@author: Mindy Ross
+python version 3.7.4
+pandas version: 1.3.5
+numpy version: 1.19.2
+"""
+# Make dataframe containing equidistant coordinates and corresponding sampled vMF density for each subject
+
 #%%
 import pandas as pd
 from pyarrow import parquet
@@ -5,17 +13,11 @@ import numpy as np
 import re
 import glob
 import spherical_kde
-import cartopy.crs as ccrs
 import spherical_kde.utils
-from matplotlib import pyplot as plt
-from itertools import combinations
-import matplotlib
 from matplotlib.gridspec import GridSpec
 import math
-from pprint import pprint
-# gets rid of the warnings for setting var to loc or something
+# gets rid of the warnings for setting var to loc
 pd.options.mode.chained_assignment = None
-                                 
 
 numbers = re.compile(r'(\d+)')
 def numericalSort(value):
@@ -85,15 +87,15 @@ equi_theta = np.ndarray.round(np.arccos(z / np.sqrt(x**2 + y**2 + z**2)),2)
 
 dfOut = pd.DataFrame([],columns = ['userID','weekNumber','z', 'x', 'y', 'phi', 'theta', 'density'])
 
+# loop through all user files
 for file in all_files:
-    # dfAccel = pd.read_parquet(file, engine='pyarrow')
     dfAccel = pd.read_parquet(file, engine='pyarrow')
     # filter accel points to be on unit sphere:
     df = accel_filter(dfAccel)
     # convert cartesian coordinates to spherical
     addSpherCoords(df)
 
-    # create KDE per user and day
+    # create spherical KDE per user and week
     dfByUser = df.groupby(['userID', 'weekNumber'])
     for userAndWk, group in dfByUser:
         print('user: ' + str(userAndWk[0])) # user
@@ -111,23 +113,15 @@ for file in all_files:
         theta_samples = group['theta']
         phi_samples = group['phi']
 
-        sKDE = spherical_kde.SphericalKDE(phi_samples, theta_samples, weights=None, bandwidth=0.1, density=50) #changed bandwidth from 0.1
+        sKDE = spherical_kde.SphericalKDE(phi_samples, theta_samples, weights=None, bandwidth=0.1, density=50)
         sKDEList.append((userAndWk[0], userAndWk[1], sKDE))
-
         density_vector = np.exp(sKDE(equi_phi, equi_theta))
 
         # dataframe of points and densities
         arrDensities = np.vstack([[userAndWk[0]]*len(equi_phi), [userAndWk[1]]*len(equi_phi),x,y,z,equi_phi, equi_theta, density_vector])
         arrDensities_t = arrDensities.transpose()
-
         dfDensities = pd.DataFrame(arrDensities_t, columns = ['userID','weekNumber','z', 'x', 'y', 'phi', 'theta', 'density'])
-
         dfOut = dfOut.append(dfDensities)
 
-        print(len(dfOut))
-
 dfOut.to_csv('/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/matrix/kde_sampled_points/coords_with_KDEdensities_bw01-'+str(num)+'pts.csv', index=False)
-
 print('finish')
-
-# %%

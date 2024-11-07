@@ -1,9 +1,17 @@
+"""
+@author: Mindy Ross
+python version 3.7.4
+pandas version: 1.3.5
+numpy version: 1.19.2
+"""
+# Cluster accelerometer data using spherical k-means
+
 #%%
 import pandas as pd
 import numpy as np
 import re
 import glob
-from spherecluster import SphericalKMeans
+from spherecluster import SphericalKMeans # https://github.com/jasonlaska/spherecluster
 from matplotlib import pyplot as plt
 
 # gets rid of the warnings for setting var to loc
@@ -41,8 +49,8 @@ def addSpherCoords(xyz): # from spherical_kde function
 pathAccel = '/home/mindy/Desktop/BiAffect-iOS/data_processing/processed_outputs/accel/'
 pathFig = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/kmeans/python_plots/'
 pathAccOut = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/accel_with_clusters/open_science/kmeans/'
+# kFile (number of clusters for each subject) determined using vMF distribution and part of clustering pipeline
 kFile = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/kmeans/k_list.csv'
-
 dfK = pd.read_csv(kFile, index_col=False)
 
 # list of user accel files
@@ -53,9 +61,6 @@ for file in all_files:
     df = pd.read_parquet(file, engine='pyarrow')
     user = df['userID'].iloc[0]
     print(user)
-
-    if user !=4:
-        continue
 
     # filter accel points to be on unit sphere:
     df = accel_filter(df)
@@ -72,9 +77,6 @@ for file in all_files:
         print('user: ' + str(user)) # user
         print('week: ' + str(wk))  # week number
 
-        if wk != 2:
-            continue
-
         # get number of clusters
         try:
             k = int(dfK.loc[(dfK['userID']==user) & (dfK['weekNumber']==wk)]['k'])
@@ -85,14 +87,11 @@ for file in all_files:
         accGrp['y'] = pd.to_numeric(accGrp['y'])
         accGrp['z'] = pd.to_numeric(accGrp['z'])
 
-        # https://github.com/jasonlaska/spherecluster
         # spherical k-means
         skm = SphericalKMeans(n_clusters=k)
         accGrp['cluster'] = skm.fit_predict(accGrp[['x','y','z']])+1 # add one so first cluster not 0 label
 
-        # skm=coclust.clustering.spherical_kmeans.SphericalKmeans(n_clusters=k)
-        # skm.fit(grp)
-
+        # Plot spherical k-means clusters
         plt.rcParams.update({'font.size': 32})
         # XZ Plot
         fig = plt.figure(figsize=(16,16),facecolor=(1, 1, 1))
@@ -102,8 +101,8 @@ for file in all_files:
         ax.scatter(accGrp['x'], accGrp['z'], c=accGrp['cluster'], cmap='Set2')
         plt.xlim([-1.2,1.2])
         plt.ylim([-1.2,1.2])
-        plt.show()
-        # plt.savefig(pathFig+'user_' + str(int(user)) + '_week_' + str(int(wk)) + '_plot_skmeans-xz.png')
+        # plt.show()
+        plt.savefig(pathFig+'user_' + str(int(user)) + '_week_' + str(int(wk)) + '_plot_skmeans-xz.png')
         
         # # XY Plot
         # fig = plt.figure(figsize=(16,16),facecolor=(1, 1, 1))
@@ -127,20 +126,16 @@ for file in all_files:
         # # plt.show()
         # plt.savefig(pathFig+'user_' + str(int(user)) + '_week_' + str(int(wk)) + '_plot_skmeans-yz.png')
         
-        # plt.close('all')
+        plt.close('all')
 
-        break
-        # # append updated accel group
-        # accOut.append(accGrp)
+        # append updated accel group
+        accOut.append(accGrp)
 
-# # save updated accel data to csv
-#     if len(accOut) < 1:
-#         continue
-#     dfAccOut = pd.concat(accOut,axis=0,ignore_index=True)
-#     # dfAccOut.to_csv(pathAccOut + 'user_'+str(int(user))+'_accel_withClusters.csv', index=False)
-#     # dfAccOut.to_parquet(pathAccOut + 'user_'+str(int(user))+'_accel_withClusters-kmeans.parquet')
-#     # print('finished saving updated accelerometer data')
-#     # print('=========================================================================================')
+# save updated accel data to csv
+    if len(accOut) < 1:
+        continue
+    dfAccOut = pd.concat(accOut,axis=0,ignore_index=True)
+    dfAccOut.to_parquet(pathAccOut + 'user_'+str(int(user))+'_accel_withClusters-kmeans.parquet')
 
 print('finish')
 

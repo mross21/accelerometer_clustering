@@ -1,13 +1,12 @@
-# %%
-# 3D plot
-# 3D plot
-# 3D plot
-# 3D plot
-# 3D plot
-# 3D plot
-# 3D plot
-# 3D plot
+"""
+@author: Mindy Ross
+python version 3.7.4
+pandas version: 1.3.5
+numpy version: 1.19.2
+"""
+# Plot XZ vMF distribution (spherical KDE) of accelerometer data
 
+#%%
 import pandas as pd
 from pyarrow import parquet
 import numpy as np
@@ -16,7 +15,7 @@ import glob
 import spherical_kde
 from matplotlib import pyplot as plt
 import math
-# gets rid of the warnings for setting var to loc or something
+# gets rid of the warnings for setting var to loc
 pd.options.mode.chained_assignment = None
                                  
 ## Functions
@@ -74,106 +73,79 @@ def regular_on_sphere_points(r,num):
 
 #######################################################################################################
 # folder path for accelerometer files
-# pathAccel = '/home/mindy/Desktop/BiAffect-iOS/UnMASCK/BiAffect_data/processed_output/accelerometer/'
-pathAccel = '/home/mindy/Desktop/BiAffect-iOS/data_processing/processed_outputs/accel/'
+pathAccel = '/home/mindy/Desktop/BiAffect-iOS/UnMASCK/BiAffect_data/processed_output/accelerometer/'
 # folder to save plots
-plotPath = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/plots/XZ_userAndWeek/open_science/' # fix_scale/v2/'
+plotPath = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/plots/XZ_userAndWeek/'
 
 # get list of sorted accelerometer filenames
-# all_files = sorted(glob.glob(pathAccel + "*.csv"), key = numericalSort)
-all_files = sorted(glob.glob(pathAccel + "*.parquet"), key = numericalSort)
+all_files = sorted(glob.glob(pathAccel + "*.csv"), key = numericalSort)
+# all_files = sorted(glob.glob(pathAccel + "*.parquet"), key = numericalSort)
 pi = np.pi
 
-# make equidistant points on sphere to sample KDE at
-radius = 1
-num = 1000 #20000
+# make equidistant points on sphere to sample
+radius = 1 # radius of sphere
+num = 10000 # number of points to create on sphere
 regular_surf_points = regular_on_sphere_points(radius,num)
 pts_xyz=np.array(regular_surf_points)
 x=pts_xyz[:,0]
 y=pts_xyz[:,1]
 z=pts_xyz[:,2]
+# find theta and phi of equidistant points
 equi_phi = np.ndarray.round(np.mod(np.arctan2(y, x), np.pi*2),2) 
 equi_theta = np.ndarray.round(np.arccos(z / np.sqrt(x**2 + y**2 + z**2)),2) 
-spherePts = pd.DataFrame(np.column_stack((equi_theta,equi_phi)), columns = ['theta','phi'])
 
 # loop through accelerometer files
 for file in all_files:
-    # dfAccel = pd.read_csv(file, index_col=False)
     dfAccel = pd.read_parquet(file, engine='pyarrow')
-    user = int(dfAccel['userID'].unique())
-    print(user)
-
-    if dfAccel['userID'].unique() != 4:
-        continue
-
 
     # filter accel points to only include when phone is stationary (magnitude ~1)
     dfAccel = accel_filter(dfAccel)
     # convert cartesian coordinates to spherical coordinates
     addSpherCoords(dfAccel)
 
-    group = dfAccel.loc[dfAccel['weekNumber'] == 15]
-    week = int(group['weekNumber'].unique())
-    
-    
+    # create spherical KDE per user and time group
+    grouping = 'weekNumber' 
+    dfByUser = dfAccel.groupby(['userID', grouping])
+    for userGrp, group in dfByUser:
+        print('user: ' + str(userGrp[0])) # user
+        print('time group: ' + str(userGrp[1]))  # time group
 
-    # # if group size too large, remove every 4th row
-    # while len(group) > 30000:
-    #     print('group size above 50000')
-    #     print(len(group))
-    #     group = group[np.mod(np.arange(group.index.size),4)!=0]
-    # print(len(group))
-    
+        # # if group size too large, remove every 4th row
+        # while len(group) > 70000:
+        #     print('group size above 70000')
+        #     print(len(group))
+        #     group = group[np.mod(np.arange(group.index.size),4)!=0]
 
+        # if group length less than 2 rows, skip plot
+        if len(group) < 2:
+            continue
 
-    sKDE = spherical_kde.SphericalKDE(group['phi'], group['theta'], weights=None, bandwidth=0.1) #, density=50)
-    
-    # sample KDE at equidistant points to get densities
-    sKDE_densities = np.exp(sKDE(equi_phi, equi_theta))
-    # dataframe of points and densities
-    KDEdensities = np.column_stack([[user]*len(equi_phi), [week]*len(equi_phi),x,y,z,equi_phi,equi_theta,sKDE_densities])
-    grpKDE = pd.DataFrame(KDEdensities, columns = ['userID','weekNumber','z', 'x', 'y', 'phi', 'theta', 'density'])
+        # get theta and phi coordinates
+        theta_samples = group['theta']
+        phi_samples = group['phi']
 
-    break
+        # make spherical KDE for user/group
+        sKDE = spherical_kde.SphericalKDE(phi_samples, theta_samples, weights=None, bandwidth=0.1, density=50)
+        # make vectors of density values at each point on sphere
+        density_vector = np.exp(sKDE(equi_phi, equi_theta))
+        # dataframe of points and densities
+        arrDensities = np.vstack([x,y,z,equi_phi, equi_theta, density_vector])
+        arrDensities_t = arrDensities.transpose()
+        # redefine the axes again to fit the axis labels from the iOS data (z coming out of page)
+        dfDensities = pd.DataFrame(arrDensities_t, columns = ['z', 'x', 'y', 'phi', 'theta', 'density'])
 
-
-
-
-#%%
-
-fig = plt.figure(facecolor=(1, 1, 1), figsize = (11,11))
-plt.rcParams.update({'font.size': 18})
-
-ax = plt.axes(projection='3d')
-
-
-p=ax.scatter(grpKDE['x'], grpKDE['y'], grpKDE['z'], c=grpKDE['density'],cmap='viridis_r')
-ax.set_xlabel('X')
-ax.set_ylabel('Y')
-ax.set_zlabel('Z')
-ax.set_xlim(-1,1)
-ax.set_ylim(-1,1)
-ax.set_zlim(-1,1)
-ax.xaxis.labelpad = 20
-ax.yaxis.labelpad = 27
-ax.zaxis.labelpad = 27
-ax.tick_params(axis='x', which='major', pad=25, rotation=45)
-ax.tick_params(axis='y', which='major', pad=15, rotation=-10)
-ax.tick_params(axis='z', which='major', pad=15, rotation=-10)
-ax.xaxis.set_major_locator(plt.MaxNLocator(9))
-ax.yaxis.set_major_locator(plt.MaxNLocator(9))
-ax.zaxis.set_major_locator(plt.MaxNLocator(9))
-cbar=plt.colorbar(p,fraction=0.03)
-cbar.set_label('Density')
-
-
-
-ax.view_init(-20,280)
-
-plt.show()
-
-  
-
-#%%
+        # 2D density plot
+        fig = plt.figure(facecolor=(1, 1, 1))
+        plt.rcParams.update({'font.size': 18})
+        ax = fig.add_subplot()
+        d = dfDensities['density']
+        #XZ
+        ax.set_xlabel('X')
+        ax.set_ylabel('Z')
+        p = ax.scatter(dfDensities['x'], dfDensities['z'], c=d, s=50, cmap = 'viridis_r')
+        plt.colorbar(p)
+        # plt.show()
+        plt.savefig(plotPath + '2D_plotXZ_user_' + str(userGrp[0]) + '_timeGroup_' + str(userGrp[1]) + '.png')
+        plt.clf()
 
 print('finish')

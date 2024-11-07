@@ -4,8 +4,7 @@ python version 3.7.4
 pandas version: 1.3.5
 numpy version: 1.19.2
 """
-
-# Requires that file paths are inserted in lines 117-123
+# Assign cluster labels to raw accelerometer data
 
 #%%
 # import packages
@@ -116,11 +115,11 @@ def nearest_neighbour(points_a, points_b):
 ### ######################################################################################################
 # FILE PATHS
 # folder of accelerometer data to be clustered
-pathAccel = '/'
+pathAccel = '/home/mindy/Desktop/BiAffect-iOS/data_processing/processed_outputs/accel/'
 # folder where figures should be saved
-pathFig = '/'
+pathFig = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/graph_matrices/figures/open_science/'
 # folder where output accelerometer data should be saved
-pathAccOut = '/'
+pathAccOut = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/accel_with_clusters/open_science/'
 
 # list of user accel files
 all_files = sorted(glob.glob(pathAccel + "*.csv"), key = numericalSort)

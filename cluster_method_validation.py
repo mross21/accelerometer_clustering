@@ -1,17 +1,23 @@
+"""
+@author: Mindy Ross
+python version 3.7.4
+pandas version: 1.3.5
+numpy version: 1.19.2
+"""
+# Validate clustering method using labeled test data
+
 #%%
 # import packages
 import pandas as pd
 from pyarrow import parquet
 import numpy as np
 import re
-import glob
 import spherical_kde
 from math import cos, sin, asin, sqrt
 from scipy import spatial
 from scipy.spatial.distance import squareform, pdist
 import networkx as nx
 from matplotlib import pyplot as plt
-from itertools import count
 # gets rid of the warnings for setting var to loc
 pd.options.mode.chained_assignment = None
 
@@ -148,10 +154,6 @@ dfAllAccel = pd.read_csv(accelFile, index_col=False)
 # filter accel points to be on unit sphere:
 dfAccel = accel_filter(dfAllAccel)
 
-# positions = dfAllAccel['position'].unique()
-# p=6
-# dfAccel = dfAllAccel.loc[dfAllAccel['position'] == positions[p]]
-
 # convert cartesian coordinates to spherical
 addSpherCoords(dfAccel)
 
@@ -163,8 +165,6 @@ sKDE_densities = np.exp(sKDE(equi_phi, equi_theta))
 # dataframe of points and densities
 KDEdensities = np.column_stack([x,y,z,equi_phi,equi_theta,sKDE_densities])
 grpKDE = pd.DataFrame(KDEdensities, columns = ['z', 'x', 'y', 'phi', 'theta', 'density'])
-
-# print('finished making KDE')
 
 ### ######################################################################################################
 # find cluster centers
@@ -186,16 +186,12 @@ cluster_x = list(grpKDE['x'].iloc[cluster_idx])
 cluster_y = list(grpKDE['y'].iloc[cluster_idx])
 cluster_z = list(grpKDE['z'].iloc[cluster_idx])
 
-# print('finished finding cluster centers')
-
 ### ######################################################################################################
 # assign cluster IDs to raw accelerometer data
 
-# # sigma alters weight function
-# sigma = 1
 # matrix of all edge weights
 # edge weights based on density- higher density between the two nodes, the lower the weight (invert density)
-edge_weights = pd.DataFrame(squareform(pdist(grpKDE[['density']], lambda u,v: (np.exp(-((u+v)/2))))), #1/((u+v)/2))**sigma
+edge_weights = pd.DataFrame(squareform(pdist(grpKDE[['density']], lambda u,v: (np.exp(-((u+v)/2))))),
                                             index=grpKDE.index, columns=grpKDE.index)
 # matrix of adjacent weights
 adj_weights = edge_weights*adjMatrix
@@ -225,22 +221,6 @@ for i in range(0,len(adj_weights)):
     min_path = dfPaths.loc[dfPaths['weight'] == min(dfPaths['weight'])]
     if len(min_path) > 1:
         print('min path lengths equal')
-        # tie_break_min_path += 1
-    
-
-    # count += 1
-    # min_elements = min(dfPaths['n_elements'])
-    # min_path = dfPaths.loc[dfPaths['n_elements'] == min_elements]
-    # # if multiple with same path length, choose cluster index closest to pt index
-    # if len(min_path) > 1:
-    #     tie_break_min_path += 1
-    #     min_path['cluster_idx_dist'] = abs(min_path['cluster_idx'] - i)
-    #     min_path = min_path.loc[min_path['cluster_idx_dist'] == min(min_path['cluster_idx_dist'])]
-    # # if multiple with same index distance, choose cluster index with smaller corresponding weight
-    # if len(min_path) > 1:
-    #     tie_break_min_path2 += 1
-    #     min_path = min_path.loc[min_path['weight'] == min(min_path['weight'])]
-
 
     closest_cluster_idx = int(min_path['cluster_idx'])
     # append every point on sphere and assigned cluster center to dictionary
@@ -250,26 +230,8 @@ for i in range(0,len(adj_weights)):
     dictClustX[i] = grpKDE.loc[grpKDE.index == closest_cluster_idx]['x'].iloc[0]
     dictClustY[i] = grpKDE.loc[grpKDE.index == closest_cluster_idx]['y'].iloc[0]
     dictClustZ[i] = grpKDE.loc[grpKDE.index == closest_cluster_idx]['z'].iloc[0]
-# print('finished making dictionary of equidistant sphere points and linked cluster center')
-################################################################
-# # plot network
-# fig = plt.figure(1, figsize=(20, 20))
-# nx.draw_networkx(G, node_size=10, with_labels=False, node_color = colors)
-# plt.show()
 
-# # set nodes attributes
-# nx.set_node_attributes(G, dictClustIdx,"cluster")
-# # get unique groups
-# groups = set(nx.get_node_attributes(G,'cluster').values())
-# mapping = dict(zip(sorted(groups),count()))
-# nodes = G.nodes()
-# colors = [mapping[G.nodes[n]['cluster']] for n in nodes]
-
-# # plot graph
-# fig = plt.figure(1, figsize=(20, 20))
-# nx.draw_networkx(G, node_size=10, with_labels=False, node_color = colors)
-# plt.show()
-### ######################################################################################################
+######################################################################################################
 # map cluster centers to raw accelerometer data 
 # set XYZ to float
 dfAccel['x'] = dfAccel['x'].astype(float)
@@ -278,102 +240,48 @@ dfAccel['z'] = dfAccel['z'].astype(float)
 # find nearest equidistant sphere point for each raw accel point
 dfAccel['nodeIdx'] = nearest_neighbour(dfAccel[['x','y','z']], grpKDE[['x','y','z']])
 
-
-# # if KDE point has too small of density, delete point and raw accel points near it
-# KDE_threshold = max(grpKDE['density'])/100 
-# grpKDE_filter = grpKDE.loc[grpKDE['density'] > KDE_threshold]
-# accGrp_filter = accGrp[accGrp['nodeIdx'].isin(grpKDE_filter.index)]
-
-accGrp_filter = dfAccel
-
 # map cluster center to each raw accel point using the matched sphere point
-accGrp_filter['cluster_center'] = accGrp_filter['nodeIdx'].map(dictClust)
-accGrp_filter['cluster_center_idx'] = accGrp_filter['nodeIdx'].map(dictClustIdx)
-accGrp_filter['cluster_center_x'] = accGrp_filter['nodeIdx'].map(dictClustX)
-accGrp_filter['cluster_center_y'] = accGrp_filter['nodeIdx'].map(dictClustY)
-accGrp_filter['cluster_center_z'] = accGrp_filter['nodeIdx'].map(dictClustZ)
-# # append updated accel group
-# accOut.append(accGrp_filter)
-# print('finished adding cluster labels to accelerometer data')
-#%%
+dfAccel['cluster_center'] = dfAccel['nodeIdx'].map(dictClust)
+dfAccel['cluster_center_idx'] = dfAccel['nodeIdx'].map(dictClustIdx)
+dfAccel['cluster_center_x'] = dfAccel['nodeIdx'].map(dictClustX)
+dfAccel['cluster_center_y'] = dfAccel['nodeIdx'].map(dictClustY)
+dfAccel['cluster_center_z'] = dfAccel['nodeIdx'].map(dictClustZ)
+
 ## ######################################################################################################
 # XZ plot of labeled accelerometer data
 plt.rcParams.update({'font.size': 39})
-groupAcc_filter=accGrp_filter
 fig = plt.figure(figsize=(16,16),facecolor=(1, 1, 1))
 ax = fig.add_subplot()
 ax.set_xlabel('X')
 ax.set_ylabel('Z')
-ax.scatter(groupAcc_filter['x'], groupAcc_filter['z'], c=groupAcc_filter['cluster_center'], cmap='Set2_r', s=100)
-# ax.scatter(cluster_x,cluster_z, c='red')
-# for i in range(len(cluster_idx)):
-#     plt.text(cluster_x[i],cluster_z[i],str(list(dictID.values())[i]), color="red", fontsize=16)
+ax.scatter(dfAccel['x'], dfAccel['z'], c=dfAccel['cluster_center'], cmap='Set2_r', s=100)
 plt.xlim([-1.2,1.2])
 plt.ylim([-1.2,1.2])
-# plt.show()
-# plt.savefig(pathFig+positions[p]+'_XZ.png')
 plt.savefig(pathFig+'allPositions_XZ.png')
-#%%
+
 # XY plot
 fig = plt.figure(figsize=(16,16),facecolor=(1, 1, 1))
 ax = fig.add_subplot()
 ax.set_xlabel('X')
 ax.set_ylabel('Y')
-ax.scatter(groupAcc_filter['x'], groupAcc_filter['y'], c=groupAcc_filter['cluster_center'], cmap='Set2_r')
-# ax.scatter(cluster_x,cluster_y, c='red')
-# for i in range(len(cluster_idx)):
-#     plt.text(cluster_x[i],cluster_y[i],str(list(dictID.values())[i]), color="red", fontsize=16)
+ax.scatter(dfAccel['x'], dfAccel['y'], c=dfAccel['cluster_center'], cmap='Set2_r')
 plt.xlim([-1.2,1.2])
 plt.ylim([-1.2,1.2])
-plt.show()
-# plt.savefig(pathFig+positions[p]+'_XY.png')
-# plt.savefig(pathFig+'allPositions_XY.png')
+# plt.show()
+plt.savefig(pathFig+'allPositions_XY.png')
 
 # YZ plot
 fig = plt.figure(figsize=(16,16),facecolor=(1, 1, 1))
 ax = fig.add_subplot()
 ax.set_xlabel('Y')
 ax.set_ylabel('Z')
-ax.scatter(groupAcc_filter['y'], groupAcc_filter['z'], c=groupAcc_filter['cluster_center'], cmap='Set2_r')
-# ax.scatter(cluster_y,cluster_z, c='red')
-# for i in range(len(cluster_idx)):
-#     plt.text(cluster_y[i],cluster_z[i],str(list(dictID.values())[i]), color="red", fontsize=16)
+ax.scatter(dfAccel['y'], dfAccel['z'], c=dfAccel['cluster_center'], cmap='Set2_r')
 plt.xlim([-1.2,1.2])
 plt.ylim([-1.2,1.2])
-plt.show()
-# plt.savefig(pathFig+positions[p]+'_YZ.png')
-# plt.savefig(pathFig+'allPositions_YZ.png')
+# plt.show()
+plt.savefig(pathFig+'allPositions_YZ.png')
 
-# plt.close('all')
-
-### ######################################################################################################
-# save KDE points
-    # if len(dfOut) < 1:
-    #     continue
-    # dfOut2 = pd.concat(dfOut,axis=0,ignore_index=True)
-    # dfOut2.to_csv('/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/KL/openScience_coords_KDEdensities_bw01-'+str(num)+'pts-v2.csv', index=False)
-
-# # save updated accel data to csv
-#     if len(accOut) < 1:
-#         continue
-#     dfAccOut = pd.concat(accOut,axis=0,ignore_index=True)
-#     # dfAccOut.to_csv(pathAccOut + 'user_'+str(int(user))+'_accel_withClusters.csv', index=False)
-#     dfAccOut.to_parquet(pathAccOut + 'user_'+str(int(user))+'_accel_withClusters-v2.parquet')
-#     # print('finished saving updated accelerometer data')
-#     # print('=========================================================================================')
-
-#     # save file for number of clusters for every user/week
-#     dfK = pd.DataFrame(k_list, columns = ['userID','weekNumber','k'])
-#     dfK.to_csv('/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/kmeans/k_list-v2.csv', index=False)
-
-print('finished with everything')
-
-#%%
-med = dfAccel.groupby('position').agg({'x':'median','y':'median','z':'median'})
-sd = dfAccel.groupby('position').agg({'x':'std','y':'std','z':'std'})
-
-dfAccel.groupby('position').count()
-
+plt.close('all')
 
 #%%
 # plot raw accel points colored by position
@@ -412,8 +320,8 @@ ax.set_ylabel('Y')
 plt.xlim([-1.2,1.2])
 plt.ylim([-1.2,1.2])
 ax.scatter(dfAccel['x'], dfAccel['y'], c=dfAccel['position'].map(colors), alpha=1)
-plt.show()
-# plt.savefig(pathFig+'rawData_allPositions_XY.png')
+# plt.show()
+plt.savefig(pathFig+'rawData_allPositions_XY.png')
 
 #YZ
 fig = plt.figure(figsize=(16,16),facecolor=(1, 1, 1))
@@ -430,7 +338,7 @@ ax.set_ylabel('Z')
 plt.xlim([-1.2,1.2])
 plt.ylim([-1.2,1.2])
 ax.scatter(dfAccel['y'], dfAccel['z'], c=dfAccel['position'].map(colors), alpha=1)
-plt.show()
-# plt.savefig(pathFig+'rawData_allPositions_YZ.png')
+# plt.show()
+plt.savefig(pathFig+'rawData_allPositions_YZ.png')
 
 # %%
