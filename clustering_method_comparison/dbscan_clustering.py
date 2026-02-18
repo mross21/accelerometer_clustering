@@ -46,9 +46,9 @@ def addSpherCoords(xyz): # from spherical_kde function
 
 ### ######################################################################################################
 # files and paths
-pathAccel = '/home/mindy/Desktop/BiAffect-iOS/data_processing/processed_outputs/accel/'
-pathFig = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/dbscan/python_plots/'
-pathAccOut = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/accel_with_clusters/open_science/dbscan/'
+pathAccel = ''
+pathFig = ''
+pathAccOut = ''
 
 # list of user accel files
 all_files = sorted(glob.glob(pathAccel + "*.parquet"), key = numericalSort)
