@@ -15,8 +15,8 @@ import glob
 from matplotlib import pyplot as plt
 from math import cos, sin, asin, sqrt
 
-pathAccel = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/accel_with_clusters/open_science/'
-pathFig = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/cluster_plots_over_time/open_science/'
+pathAccel = ''
+pathFig = ''
 
 numbers = re.compile(r'(\d+)')
 def numericalSort(value):
