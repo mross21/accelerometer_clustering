@@ -73,9 +73,9 @@ def regular_on_sphere_points(r,num):
 
 #######################################################################################################
 # folder path for accelerometer files
-pathAccel = '/home/mindy/Desktop/BiAffect-iOS/data_processing/processed_outputs/accel/'
+pathAccel = ''
 # folder to save plots
-plotPath = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/plots/XZ_userAndWeek/open_science/'
+plotPath = ''
 
 # get list of sorted accelerometer filenames
 all_files = sorted(glob.glob(pathAccel + "*.parquet"), key = numericalSort)
