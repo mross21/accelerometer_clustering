@@ -115,11 +115,11 @@ def nearest_neighbour(points_a, points_b):
 ### ######################################################################################################
 # FILE PATHS
 # folder of accelerometer data to be clustered
-pathAccel = '/home/mindy/Desktop/BiAffect-iOS/data_processing/processed_outputs/accel/'
+pathAccel = ''
 # folder where figures should be saved
-pathFig = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/graph_matrices/figures/open_science/'
+pathFig = ''
 # folder where output accelerometer data should be saved
-pathAccOut = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/accel_with_clusters/open_science/'
+pathAccOut = ''
 
 # list of user accel files
 all_files = sorted(glob.glob(pathAccel + "*.csv"), key = numericalSort)
