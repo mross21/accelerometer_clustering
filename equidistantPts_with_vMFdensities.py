@@ -66,9 +66,9 @@ def regular_on_sphere_points(r,num):
 
 #######################################################################################################
 
-pathAccel = '/home/mindy/Desktop/BiAffect-iOS/UnMASCK/BiAffect_data/processed_output/accelerometer/'
-plotPath = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/plots/userAndWeek/'
-pathOut = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/matrix/kde_sampled_points/'
+pathAccel = ''
+plotPath = ''
+pathOut = ''
 
 all_files = sorted(glob.glob(pathAccel + "*.parquet"), key = numericalSort)
 sKDEList = []
@@ -123,5 +123,5 @@ for file in all_files:
         dfDensities = pd.DataFrame(arrDensities_t, columns = ['userID','weekNumber','z', 'x', 'y', 'phi', 'theta', 'density'])
         dfOut = dfOut.append(dfDensities)
 
-dfOut.to_csv('/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/matrix/kde_sampled_points/coords_with_KDEdensities_bw01-'+str(num)+'pts.csv', index=False)
+dfOut.to_csv('*.csv', index=False)
 print('finish')
