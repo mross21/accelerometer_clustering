@@ -46,11 +46,11 @@ def addSpherCoords(xyz): # from spherical_kde function
 
 ### ######################################################################################################
 # files and paths
-pathAccel = '/home/mindy/Desktop/BiAffect-iOS/data_processing/processed_outputs/accel/'
-pathFig = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/GMM/python_plots/'
-pathAccOut = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/accel_with_clusters/open_science/gmm/'
+pathAccel = ''
+pathFig = ''
+pathAccOut = ''
 # kFile (number of clusters for each subject) determined using vMF distribution and part of clustering pipeline
-kFile = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/GMM/k_list.csv'
+kFile = ''
 dfK = pd.read_csv(kFile, index_col=False)
 
 # list of user accel files
