@@ -14,10 +14,10 @@ from pyarrow import parquet
 import datetime
 
 # paths
-pathInKeypress = '*'
-pathInAccel = '*'
-fileUserIDs = '*' # parquet file
-pathOut = '*'
+pathInKeypress = ''
+pathInAccel = ''
+fileUserIDs = '' # parquet file
+pathOut = ''
 
 # functions
 # match kp and accel files
