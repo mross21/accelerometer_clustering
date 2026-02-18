@@ -114,11 +114,11 @@ def nearest_neighbour(points_a, points_b):
 ### ######################################################################################################
 # FILE PATHS
 # folder of accelerometer data to be clustered
-accelFile = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/validation/all_positions_labeled.csv'
+accelFile = ''
 # folder where figures should be saved
-pathFig = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/validation/'
+pathFig = ''
 # folder where output accelerometer data should be saved
-pathAccOut = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/validation/'
+pathAccOut = ''
 
 # MAKE EQUIDISTANT POINTS TO SAMPLE KDE AT
 radius = 1
