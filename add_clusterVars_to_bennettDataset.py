@@ -14,10 +14,10 @@ from pyarrow import parquet
 import datetime
 
 # paths
-pathInKeypress = '/home/mindy/Desktop/BiAffect-iOS/data_processing/processed_outputs/keypress/'
-pathInAccel = '/home/mindy/Desktop/BiAffect-iOS/accelAnalyses/spherical_kde/accel_with_clusters/open_science/features/'
-fileUserIDs = '/home/mindy/Desktop/BiAffect-iOS/data_processing/raw_inputs/allUsers_2021-10-04.parquet'
-pathOut = '/home/mindy/Desktop/BiAffect-iOS/caseyBennett/processed_output/'
+pathInKeypress = '*'
+pathInAccel = '*'
+fileUserIDs = '*' # parquet file
+pathOut = '*'
 
 # functions
 # match kp and accel files
@@ -263,6 +263,6 @@ dfOut = pd.DataFrame(listOut, columns = ['healthCode', 'Date', 'n_clusters', 'to
                                         'chord_sum_new', 'arc_sum_new'])
 
 # save to csv
-dfOut.to_csv(pathOut + 'biaffect_clusterFeatures_byWk-v2.csv', index=False)
+dfOut.to_csv(pathOut + '*.csv', index=False)
 
 print('finish')
