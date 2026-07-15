@@ -1,10 +1,3 @@
-"""
-@author: Mindy Ross
-python version 3.7.4
-pandas version: 1.3.5
-numpy version: 1.19.2
-"""
-#%%
 ## LABEL SESSION PHONE ORIENTATION
 # based on median XYZ values
 
