@@ -26,7 +26,7 @@ def random_on_sphere_points(r,num):
         x = math.sqrt(r**2 - z**2)*math.cos(phi)
         y = math.sqrt(r**2 - z**2)*math.sin(phi)
         points.append([x,y,z])
-        return points
+    return points
 
 def regular_on_sphere_points(r,num):
     points = []

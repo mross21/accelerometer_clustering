@@ -1,0 +1,7 @@
+PATH_ACCELEROMETER_PARQUET = '/path/to/accelerometer/parquet/files/'
+PATH_FIGURES = '/path/to/output/figures/'
+PATH_CLUSTERS = '/path/to/output/clusters/'
+PATH_OUTPUT_DATA = '/path/to/output/data/'
+PATH_KEYPRESS = '/path/to/keypress/parquet/files/'
+PATH_USER_IDS = '/path/to/user_ids.parquet'
+PATH_K_LIST = '/path/to/k_list.parquet'
